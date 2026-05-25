@@ -6,19 +6,31 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
+            $table->string('name', 150);
+            $table->string('email', 150)->unique('uk_users_email');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->enum('role', ['kaprodi', 'tim_kurikulum', 'dosen', 'mahasiswa']);
+            $table->string('identifier', 25)->nullable();
+            $table->string('program_studi', 150)->nullable();
+            $table->string('fakultas', 150)->nullable();
+            $table->string('perguruan_tinggi', 200)->nullable();
+            $table->year('tahun_masuk')->nullable();
+            $table->unsignedBigInteger('id_kurikulum')->nullable();
+            $table->string('foto', 500)->nullable();
+            $table->enum('status_aktif', ['aktif', 'nonaktif', 'cuti'])->default('aktif');
+            $table->timestamp('last_login_at')->nullable();
             $table->rememberToken();
             $table->timestamps();
+            $table->softDeletes();
+
+            $table->index('role', 'idx_users_role');
+            $table->index('identifier', 'idx_users_identifier');
+            $table->index(['tahun_masuk', 'role'], 'idx_users_angkatan');
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
@@ -37,13 +49,10 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('users');
-        Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
+        Schema::dropIfExists('password_reset_tokens');
+        Schema::dropIfExists('users');
     }
 };
