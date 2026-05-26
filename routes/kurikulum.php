@@ -8,6 +8,7 @@ use App\Http\Controllers\Kurikulum\DashboardController;
 use App\Http\Controllers\Kurikulum\DistribusiSemesterController;
 use App\Http\Controllers\Kurikulum\KurikulumController;
 use App\Http\Controllers\Kurikulum\MataKuliahController;
+use App\Http\Controllers\Kurikulum\OverviewController;
 use App\Http\Controllers\Kurikulum\PeriodeKurikulumController;
 use App\Http\Controllers\Kurikulum\PivotController;
 use App\Http\Controllers\Kurikulum\PlController;
@@ -98,9 +99,19 @@ Route::prefix('/{kurikulum}')
         Route::get('distribusi-semester', [DistribusiSemesterController::class, 'index'])
             ->name('distribusi-semester');
 
+        // ── Overview / Report Pages (read-only summary) ───────────────────────
+        Route::prefix('overview')->name('overview.')->group(function () {
+            Route::get('/pemenuhan-cpl', [OverviewController::class, 'pemenuhanCpl'])->name('pemenuhan-cpl');
+            Route::get('/cpmk',           [OverviewController::class, 'cpmkOverview'])->name('cpmk');
+            Route::get('/rumusan-akhir',  [OverviewController::class, 'rumusanAkhir'])->name('rumusan-akhir');
+        });
+
         // ── Pivot Matriks ─────────────────────────────────────────────────────
         // Setiap endpoint pivot menerima GET (tampil matriks) dan POST (simpan centang)
         Route::prefix('pivot')->name('pivot.')->group(function () {
+
+            // Auto-save AJAX per-cell + sinkronisasi matriks turunan
+            Route::post('/toggle', [PivotController::class, 'toggle'])->name('toggle');
 
             // Matriks PL ↔ CPL Prodi
             Route::get('/pl-cpl', [PivotController::class, 'plCpl'])->name('pl-cpl');
@@ -125,5 +136,8 @@ Route::prefix('/{kurikulum}')
             // Matriks 3 dimensi CPL ↔ BK ↔ MK
             Route::get('/cpl-bk-mk', [PivotController::class, 'cplBkMk'])->name('cpl-bk-mk');
             Route::post('/cpl-bk-mk', [PivotController::class, 'saveCplBkMk'])->name('cpl-bk-mk.save');
+
+            // Matriks CPL Prodi ↔ CPMK (per CPMK terhadap CPL yang relevan)
+            Route::get('/cpl-cpmk', [PivotController::class, 'cplCpmk'])->name('cpl-cpmk');
         });
     });

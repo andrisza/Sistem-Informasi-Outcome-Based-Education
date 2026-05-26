@@ -57,7 +57,7 @@ Route::prefix('cqi')->name('cqi.')->group(function () {
     Route::get('/', [CqiController::class, 'index'])->name('index');
     Route::get('/{log}', [CqiController::class, 'show'])->name('show');
     Route::post('/{log}/setujui', [CqiController::class, 'setujui'])->name('setujui');
-    Route::put('/{log}', [CqiController::class, 'update'])->name('update');
+    Route::patch('/{log}', [CqiController::class, 'update'])->name('update');
 });
 
 // ── Laporan OBE ───────────────────────────────────────────────────────────────

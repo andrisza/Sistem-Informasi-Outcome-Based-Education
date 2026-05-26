@@ -27,7 +27,7 @@
         </div>
 
         <p class="text-center text-slate-500 text-xs mt-6">
-            &copy; {{ date('Y') }} Program Studi Sistem Informasi — LAMINFOKOM
+            &copy; {{ date('Y') }} DIFFDEV NAWASENA
         </p>
     </div>
 

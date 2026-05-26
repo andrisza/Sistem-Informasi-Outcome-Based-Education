@@ -74,15 +74,4 @@
         </button>
     </form>
 
-    {{-- Info peran --}}
-    <div class="mt-6 pt-5 border-t border-gray-100">
-        <p class="text-xs text-gray-400 text-center mb-3">Akses sistem berdasarkan peran</p>
-        <div class="grid grid-cols-2 gap-2 text-xs text-center">
-            <div class="bg-blue-50 text-blue-700 rounded-lg py-2 px-3 font-medium">Kaprodi</div>
-            <div class="bg-violet-50 text-violet-700 rounded-lg py-2 px-3 font-medium">Tim Kurikulum</div>
-            <div class="bg-emerald-50 text-emerald-700 rounded-lg py-2 px-3 font-medium">Dosen</div>
-            <div class="bg-amber-50 text-amber-700 rounded-lg py-2 px-3 font-medium">Mahasiswa</div>
-        </div>
-    </div>
-
 @endsection

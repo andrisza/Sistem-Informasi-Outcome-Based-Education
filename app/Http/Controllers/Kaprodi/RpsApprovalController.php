@@ -3,31 +3,66 @@
 namespace App\Http\Controllers\Kaprodi;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
+use App\Models\RpsHeader;
+use App\Models\SemesterAkademik;
 use Illuminate\Http\Request;
 
 class RpsApprovalController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // TODO: list RPS berstatus 'review' yang menunggu persetujuan
-        abort(501, 'Not implemented');
+        $query = RpsHeader::with(['mataKuliah', 'dosenPengembang', 'semester'])
+                          ->where('status', 'review')
+                          ->orderByDesc('updated_at');
+
+        if ($search = $request->search) {
+            $query->whereHas('mataKuliah', fn ($q) => $q->where('nama_mk', 'like', "%{$search}%")
+                                                         ->orWhere('kode_mk', 'like', "%{$search}%"))
+                  ->orWhereHas('dosenPengembang', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+        }
+
+        if ($semesterId = $request->semester) {
+            $query->where('id_semester', $semesterId);
+        }
+
+        $rpsList   = $query->paginate(20)->withQueryString();
+        $semesters = SemesterAkademik::orderByDesc('id')->get();
+
+        return view('kaprodi.rps-approval.index', compact('rpsList', 'semesters'));
     }
 
-    public function show(string $rps)
+    public function show(RpsHeader $rps)
     {
-        // TODO: tampilkan detail RPS untuk direview
-        abort(501, 'Not implemented');
+        $rps->load(['mataKuliah', 'dosenPengembang', 'kaprodiPengesah', 'semester', 'pertemuan']);
+
+        return view('kaprodi.rps-approval.show', compact('rps'));
     }
 
-    public function approve(Request $request, string $rps)
+    public function approve(Request $request, RpsHeader $rps)
     {
-        // TODO: ubah status RPS → 'disahkan', set disahkan_pada & id_kaprodi_pengesah
-        abort(501, 'Not implemented');
+        $rps->update([
+            'status'             => 'disahkan',
+            'disahkan_pada'      => now(),
+            'id_kaprodi_pengesah'=> auth()->id(),
+        ]);
+
+        ActivityLog::record('approve_rps', RpsHeader::class, $rps->id);
+
+        return redirect()->route('kaprodi.rps-approval.index')
+                         ->with('success', "RPS {$rps->mataKuliah->nama_mk} berhasil disahkan.");
     }
 
-    public function reject(Request $request, string $rps)
+    public function reject(Request $request, RpsHeader $rps)
     {
-        // TODO: kembalikan status RPS → 'draft' dengan catatan penolakan
-        abort(501, 'Not implemented');
+        $rps->update([
+            'status'              => 'draft',
+            'id_kaprodi_pengesah' => null,
+        ]);
+
+        ActivityLog::record('reject_rps', RpsHeader::class, $rps->id, [], ['catatan' => $request->catatan]);
+
+        return redirect()->route('kaprodi.rps-approval.index')
+                         ->with('success', "RPS {$rps->mataKuliah->nama_mk} dikembalikan ke draft.");
     }
 }
