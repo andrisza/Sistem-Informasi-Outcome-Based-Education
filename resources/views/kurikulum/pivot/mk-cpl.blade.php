@@ -163,6 +163,4 @@
 </script>
 @endpush
 
-@push('scripts')
-@include('layouts._pivot-tooltip')
-@endpush
+

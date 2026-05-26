@@ -94,7 +94,7 @@
                                       data-tip-label="CPL Prodi">{{ $cpl->kode_cpl }}</span>
                             </td>
                             @foreach ($plList as $pl)
-                                @php $checked = in_array($pl->id, $existing[$cpl->id] ?? []); @endphp
+                                @php $checked = in_array($cpl->id, $existing[$pl->id] ?? []); @endphp
                                 <td class="border border-amber-100 text-center align-middle pivot-cell {{ $checked ? 'is-checked' : '' }}"
                                     style="min-width:72px;height:42px"
                                     @unless ($kurikulum->isArsip())

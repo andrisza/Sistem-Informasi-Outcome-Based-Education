@@ -66,7 +66,8 @@ class PivotController extends Controller
 
                 // Untuk pivot_cpl_bk_mk (matriks 3D): pastikan primer CPL↔BK dan MK↔BK juga ada
                 // agar relasi tidak menggantung. Ini bikin matriks 3D bisa di-edit langsung
-                // dan otomatis menulis ke matriks primer.
+                // dan otomatis menulis ke matriks primer. Setelah menulis primer, sync MK↔CPL
+                // agar pivot_mk_cpl ikut ter-update.
                 if ($data['table'] === 'pivot_cpl_bk_mk') {
                     $k = $data['keys'];
                     DB::table('pivot_cpl_bk')->updateOrInsert(
@@ -75,6 +76,7 @@ class PivotController extends Controller
                     DB::table('pivot_mk_bk')->updateOrInsert(
                         ['id_mk'  => $k['id_mk'],  'id_bk' => $k['id_bk']], []
                     );
+                    $this->consistency->syncMkCpl($kurikulum);
                     $derived = true;
                 }
             } else {
@@ -92,6 +94,10 @@ class PivotController extends Controller
                         ->where('id_mk', $data['keys']['id_mk'])
                         ->where('id_bk', $data['keys']['id_bk'])
                         ->delete();
+                } elseif ($data['table'] === 'pivot_cpl_bk_mk') {
+                    // Saat baris 3D dihapus manual, sync mk_cpl agar tidak ada relasi menggantung.
+                    $this->consistency->syncMkCpl($kurikulum);
+                    $derived = true;
                 }
             }
 
