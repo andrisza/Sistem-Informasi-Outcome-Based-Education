@@ -9,6 +9,7 @@ use App\Models\MataKuliah;
 use App\Models\NilaiMahasiswa;
 use App\Models\PengampuanMk;
 use App\Models\SemesterAkademik;
+use App\Services\GradeCalculationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -72,7 +73,7 @@ class NilaiController extends Controller
     }
 
     /**
-     * Batch upsert nilai mahasiswa.
+     * Batch upsert nilai mahasiswa, lalu hitung ulang rantai OBE secara otomatis.
      */
     public function store(Request $request, string $mk, string $semester)
     {
@@ -83,8 +84,8 @@ class NilaiController extends Controller
         $this->authorizePengampuan($dosenId, $mataKuliah->id, $semesterModel->id);
 
         $request->validate([
-            'nilai'                  => 'required|array',
-            'nilai.*.*'              => 'nullable|numeric|min:0|max:100',
+            'nilai'     => 'required|array',
+            'nilai.*.*' => 'nullable|numeric|min:0|max:100',
         ]);
 
         // nilai[id_mahasiswa][id_komponen] = nilai_mentah
@@ -107,8 +108,12 @@ class NilaiController extends Controller
             }
         });
 
+        // Hitung ulang rantai OBE: sub_cpmk → cpmk → cpl → pl
+        // Dijalankan di luar transaksi agar tidak memanjangkan lock DB
+        app(GradeCalculationService::class)->recalcForMk($mataKuliah, $semesterModel);
+
         return redirect()->route('dosen.nilai.rekap', [$mk, $semester])
-            ->with('success', 'Nilai berhasil disimpan.');
+            ->with('success', 'Nilai berhasil disimpan & capaian OBE diperbarui.');
     }
 
     /**

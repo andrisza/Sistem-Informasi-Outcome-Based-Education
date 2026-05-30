@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Kurikulum;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SyncMkCplJob;
 use App\Models\BahanKajian;
 use App\Models\CplProdi;
 use App\Models\CplSndikti;
@@ -66,8 +67,8 @@ class PivotController extends Controller
 
                 // Untuk pivot_cpl_bk_mk (matriks 3D): pastikan primer CPL↔BK dan MK↔BK juga ada
                 // agar relasi tidak menggantung. Ini bikin matriks 3D bisa di-edit langsung
-                // dan otomatis menulis ke matriks primer. Setelah menulis primer, sync MK↔CPL
-                // agar pivot_mk_cpl ikut ter-update.
+                // dan otomatis menulis ke matriks primer. Setelah menulis primer, dispatch job
+                // asinkron untuk sync pivot_mk_cpl agar tidak memblokir response.
                 if ($data['table'] === 'pivot_cpl_bk_mk') {
                     $k = $data['keys'];
                     DB::table('pivot_cpl_bk')->updateOrInsert(
@@ -76,7 +77,6 @@ class PivotController extends Controller
                     DB::table('pivot_mk_bk')->updateOrInsert(
                         ['id_mk'  => $k['id_mk'],  'id_bk' => $k['id_bk']], []
                     );
-                    $this->consistency->syncMkCpl($kurikulum);
                     $derived = true;
                 }
             } else {
@@ -95,25 +95,28 @@ class PivotController extends Controller
                         ->where('id_bk', $data['keys']['id_bk'])
                         ->delete();
                 } elseif ($data['table'] === 'pivot_cpl_bk_mk') {
-                    // Saat baris 3D dihapus manual, sync mk_cpl agar tidak ada relasi menggantung.
-                    $this->consistency->syncMkCpl($kurikulum);
+                    // Saat baris 3D dihapus manual, dispatch job sync mk_cpl.
                     $derived = true;
                 }
             }
 
-            // Saat user men-toggle matriks primer (CPL↔BK / MK↔BK), re-derive matriks
-            // turunan lain (pivot_mk_cpl). pivot_cpl_bk_mk sudah ditangani di blok atas
-            // (additive on insert, cascade on delete) supaya manual edit dari matriks 3D
-            // tidak ter-overwrite.
+            // Saat user men-toggle matriks primer (CPL↔BK / MK↔BK):
+            //   - syncCplBkMk dijalankan synchronous (additive, cepat)
+            //   - syncMkCpl akan didispatch sebagai background job setelah transaksi selesai
             if (in_array($data['table'], ['pivot_cpl_bk', 'pivot_mk_bk'], true)) {
                 if ($data['checked']) {
-                    // Additive: tambah row turunan baru yang belum ada
+                    // Additive: tambah row turunan baru yang belum ada (sync, ringan)
                     $this->consistency->syncCplBkMk($kurikulum, additive: true);
                 }
-                $this->consistency->syncMkCpl($kurikulum);
                 $derived = true;
             }
         });
+
+        // Dispatch SETELAH transaksi berhasil commit — job tidak perlu dirollback
+        // jika transaksi gagal karena belum pernah dikirim.
+        if ($derived) {
+            SyncMkCplJob::dispatch($kurikulum->id);
+        }
 
         return response()->json([
             'ok'      => true,
