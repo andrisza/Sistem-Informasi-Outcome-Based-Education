@@ -15,14 +15,23 @@ class RpsPertemuan extends Model
     protected $fillable = [
         'id_rps',
         'minggu_ke',
-        'materi_pembelajaran',
-        'metode_pembelajaran',
         'id_sub_cpmk',
         'indikator_penilaian',
+        'kriteria_teknik',
+        'bentuk_luring',
+        'bentuk_daring',
+        'materi_pembelajaran',
+        'bobot_penilaian',
+        'metode_pembelajaran',
         'estimasi_waktu',
         'media_pembelajaran',
         'referensi',
     ];
+
+    public function subCpmk(): BelongsTo
+    {
+        return $this->belongsTo(SubCpmk::class, 'id_sub_cpmk');
+    }
 
     // ── Relationships ──────────────────────────────────────────
 

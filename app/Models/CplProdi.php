@@ -21,6 +21,7 @@ class CplProdi extends Model
         'kode_cpl',
         'deskripsi',
         'kategori',
+        'referensi',
         'urutan',
     ];
 

@@ -65,9 +65,16 @@
     <span class="text-violet-700 font-medium">· Perubahan men-sinkronkan matriks MK↔CPL dan CPL↔BK↔MK secara otomatis</span>
 </div>
 
+{{-- Validation warning --}}
+<div id="mapping-warning" class="hidden mb-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
+    <svg class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    <span id="mapping-warning-text"></span>
+</div>
+
+@include('layouts._search', ['target'=>'cpl-bk-wrap','placeholder'=>'Cari CPL atau BK...','mode'=>'dim','rowSelector'=>'tbody tr'])
 <div id="pivot-form">
 
-    <div class="rounded-xl border border-amber-200 shadow-sm overflow-hidden">
+    <div id="cpl-bk-wrap" class="rounded-xl border border-amber-200 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
             <table class="border-collapse" id="pivot-table">
                 <thead>
@@ -78,33 +85,17 @@
                         @foreach ($bkList as $bk)
                             <th style="background:#F59E0B;min-width:68px" class="px-2 py-3 text-center text-xs font-bold text-white border border-amber-400">
                                 <span class="font-mono cursor-help block"
-                                      data-tooltip="{{ $bk->kode_bk }}: {{ $bk->nama_bk }}{{ $bk->deskripsi ? ' — '.Str::limit($bk->deskripsi, 80) : '' }}"
+                                      data-tooltip="{{ $bk->kode_bk }}: {{ $bk->nama_bk }}{{ $bk->deskripsi ? ' — '.$bk->deskripsi : '' }}"
                                       data-tip-label="Bahan Kajian">{{ $bk->kode_bk }}</span>
                             </th>
                         @endforeach
                     </tr>
                 </thead>
                 <tbody>
-                    @php $prevKat = null; $rowNo = 0; @endphp
                     @foreach ($cplList as $cpl)
-                        @php
-                            $kat = $cpl->kategori ?? 'Lainnya';
-                            $rowNo++;
-                        @endphp
-                        {{-- Category group row --}}
-                        @if ($kat !== $prevKat)
-                            @php $prevKat = $kat; @endphp
-                            <tr>
-                                <td colspan="{{ $bkList->count() + 1 }}"
-                                    style="background:#EDE9FE;color:#4c1d95"
-                                    class="px-4 py-2 text-xs font-bold uppercase tracking-wider border border-violet-200 sticky left-0">
-                                    {{ strtoupper($kat) }}
-                                </td>
-                            </tr>
-                        @endif
-                        {{-- Data row --}}
-                        <tr class="pivot-row" style="{{ $rowNo % 2 === 0 ? 'background:#fffbeb' : 'background:#fff' }}">
-                            <td style="min-width:130px;background:{{ $rowNo % 2 === 0 ? '#f5f3ff' : '#ede9fe' }}"
+                        @php $rowBg = $loop->even ? '#fffbeb' : '#fff'; @endphp
+                        <tr class="pivot-row" style="background:{{ $rowBg }}">
+                            <td style="min-width:130px;background:{{ $loop->even ? '#f5f3ff' : '#ede9fe' }}"
                                 class="px-4 py-2.5 border border-amber-200 sticky left-0 z-10">
                                 <span class="font-mono font-bold text-violet-800 text-xs cursor-help"
                                       data-tooltip="{{ $cpl->kode_cpl }}: {{ $cpl->deskripsi ?? '' }}"
@@ -149,6 +140,35 @@
     function refresh() { if (info) info.textContent = document.querySelectorAll('.pivot-cb:checked').length + ' relasi aktif'; }
     document.querySelectorAll('.pivot-cell').forEach(c => c.addEventListener('click', () => setTimeout(refresh, 0)));
     refresh();
+})();
+</script>
+<script>
+// Warning: CPL rows yang semua unchecked (tidak ada BK yang dipetakan)
+(function () {
+    var warning  = document.getElementById('mapping-warning');
+    var warnText = document.getElementById('mapping-warning-text');
+    if (!warning) return;
+    function checkWarning() {
+        var rows = document.querySelectorAll('#pivot-table tbody tr');
+        var unchecked = [];
+        rows.forEach(function (row) {
+            var cbs = row.querySelectorAll('.pivot-cb');
+            if (!cbs.length) return;
+            var anyChecked = Array.from(cbs).some(function (cb) { return cb.checked; });
+            if (!anyChecked) {
+                var label = row.querySelector('td:first-child span') || row.querySelector('td:first-child');
+                unchecked.push(label ? label.textContent.trim() : '?');
+            }
+        });
+        if (unchecked.length > 0) {
+            warnText.textContent = unchecked.length + ' CPL belum dipetakan ke BK manapun: ' + unchecked.join(', ');
+            warning.classList.remove('hidden');
+        } else {
+            warning.classList.add('hidden');
+        }
+    }
+    document.querySelectorAll('.pivot-cb').forEach(function (cb) { cb.addEventListener('change', checkWarning); });
+    checkWarning();
 })();
 </script>
 @endpush

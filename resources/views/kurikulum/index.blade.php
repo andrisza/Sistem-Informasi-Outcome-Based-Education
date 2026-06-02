@@ -118,23 +118,42 @@
                                 </a>
                             @endif
                             @if (auth()->user()->isKaprodi())
-                                @if ($k->status !== 'arsip')
+                                @if ($k->status === 'aktif')
+                                    {{-- Aktif → bisa diarsipkan --}}
                                     <form method="POST" action="{{ route('kurikulum.arsip', $k) }}"
-                                          onsubmit="return confirm('Arsipkan kurikulum ini?')">
+                                          onsubmit="return confirm('Arsipkan kurikulum {{ $k->kode }}?\n\nSetelah diarsipkan, semua data menjadi read-only dan tidak dapat diedit.')">
                                         @csrf
-                                        <button type="submit" class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors" title="Arsipkan">
+                                        <button type="submit"
+                                                title="Arsipkan kurikulum ini"
+                                                class="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/>
                                             </svg>
                                         </button>
                                     </form>
-                                @else
+                                @elseif ($k->status === 'arsip')
+                                    {{-- Arsip → bisa diaktifkan kembali --}}
                                     <form method="POST" action="{{ route('kurikulum.aktifkan', $k) }}"
-                                          onsubmit="return confirm('Aktifkan kembali kurikulum ini?')">
+                                          onsubmit="return confirm('Aktifkan kembali kurikulum {{ $k->kode }}?\n\nKurikulum akan dapat diedit kembali.')">
                                         @csrf
-                                        <button type="submit" class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors" title="Aktifkan">
+                                        <button type="submit"
+                                                title="Aktifkan kembali kurikulum ini"
+                                                class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors">
                                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                            </svg>
+                                        </button>
+                                    </form>
+                                @elseif ($k->status === 'draft')
+                                    {{-- Draft → harus diaktifkan dulu; tampilkan tombol aktifkan --}}
+                                    <form method="POST" action="{{ route('kurikulum.aktifkan', $k) }}"
+                                          onsubmit="return confirm('Aktifkan kurikulum {{ $k->kode }}?\n\nKurikulum akan berlaku aktif dan siap digunakan.')">
+                                        @csrf
+                                        <button type="submit"
+                                                title="Aktifkan kurikulum (dari Draft → Aktif)"
+                                                class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                             </svg>
                                         </button>
                                     </form>

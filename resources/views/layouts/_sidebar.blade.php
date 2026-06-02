@@ -12,7 +12,19 @@
             $curPath = ltrim(request()->getPathInfo(), '/');
             $tgtPath = ltrim($parsed['path'] ?? '', '/');
             if ($curPath !== $tgtPath) return false;
+
             parse_str($parsed['query'] ?? '', $tgtQuery);
+
+            // ── Kunci fix "double active" ──────────────────────────────────────
+            // Jika target href TIDAK memiliki query string sama sekali, item ini
+            // hanya aktif ketika URL saat ini juga tidak memiliki query string.
+            // Contoh: item "/kurikulum" (tanpa ?status=arsip) tidak boleh aktif
+            // saat URL adalah "/kurikulum?status=arsip" karena ada item sibling
+            // yang lebih spesifik (?status=arsip) yang seharusnya aktif.
+            if (empty($tgtQuery) && request()->getQueryString() !== null) {
+                return false;
+            }
+
             foreach ($tgtQuery as $k => $v) {
                 if (request()->query($k) !== $v) return false;
             }
@@ -74,35 +86,46 @@
 
             // Data OBE — komponen penyusun kurikulum
             ['group' => 'Data OBE', 'icon' => 'book-open', 'children' => [
+                ['label' => 'CPL SN-Dikti',   'route' => 'kurikulum.cpl-sndikti.index',  'icon' => 'academic-cap', 'params' => [$kurikulumCtx]],
                 ['label' => 'Profil Lulusan', 'route' => 'kurikulum.pl.index',           'icon' => 'academic-cap',  'params' => [$kurikulumCtx]],
                 ['label' => 'CPL Prodi',      'route' => 'kurikulum.cpl-prodi.index',    'icon' => 'check-circle',  'params' => [$kurikulumCtx]],
                 ['label' => 'Bahan Kajian',   'route' => 'kurikulum.bahan-kajian.index', 'icon' => 'book-open',     'params' => [$kurikulumCtx]],
                 ['label' => 'Mata Kuliah',    'route' => 'kurikulum.mata-kuliah.index',  'icon' => 'document',      'params' => [$kurikulumCtx]],
-                ['label' => 'Distribusi Smt', 'route' => 'kurikulum.distribusi-semester','icon' => 'collection',    'params' => [$kurikulumCtx]],
+                ['label' => 'Organisasi MK',  'route' => 'kurikulum.organisasi-mk',      'icon' => 'grid',          'params' => [$kurikulumCtx]],
             ]],
 
             // Peta & Matriks — visualisasi hubungan antar komponen OBE
             ['group' => 'Peta & Matriks', 'icon' => 'map', 'children' => [
-                ['label' => 'Matriks CPL↔PL',    'route' => 'kurikulum.pivot.pl-cpl',    'icon' => 'map',   'params' => [$kurikulumCtx]],
+                ['label' => 'Matriks CPL-SN↔CPL-P','route' => 'kurikulum.pivot.cplsn-cplp','icon' => 'table', 'params' => [$kurikulumCtx]],
+                ['label' => 'Matriks PL↔CPL',    'route' => 'kurikulum.pivot.pl-cpl',    'icon' => 'map',   'params' => [$kurikulumCtx]],
                 ['label' => 'Matriks CPL↔BK',    'route' => 'kurikulum.pivot.cpl-bk',    'icon' => 'table', 'params' => [$kurikulumCtx]],
                 ['label' => 'Matriks MK↔BK',     'route' => 'kurikulum.pivot.mk-bk',     'icon' => 'table', 'params' => [$kurikulumCtx]],
                 ['label' => 'Matriks MK↔CPL',    'route' => 'kurikulum.pivot.mk-cpl',    'icon' => 'table', 'params' => [$kurikulumCtx]],
-                ['label' => 'Matriks CPL↔CPMK',  'route' => 'kurikulum.pivot.cpl-cpmk',  'icon' => 'table', 'params' => [$kurikulumCtx]],
-                ['label' => 'Matriks CPL↔BK↔MK', 'route' => 'kurikulum.pivot.cpl-bk-mk', 'icon' => 'grid',  'params' => [$kurikulumCtx]],
+                ['label' => 'Matriks CPL↔CPMK',  'route' => 'kurikulum.pivot.cpl-cpmk',      'icon' => 'table', 'params' => [$kurikulumCtx]],
+                ['label' => 'Matriks CPL↔BK↔MK', 'route' => 'kurikulum.pivot.cpl-bk-mk',    'icon' => 'grid',  'params' => [$kurikulumCtx]],
+                ['label' => 'Peta CPL–CPMK–MK',  'route' => 'kurikulum.overview.cpl-cpmk-mk','icon' => 'table', 'params' => [$kurikulumCtx]],
             ]],
 
-            // Ringkasan — laporan dan capaian
-            ['group' => 'Ringkasan', 'icon' => 'document-report', 'children' => [
-                ['label' => 'Peta Pemenuhan CPL', 'route' => 'kurikulum.overview.pemenuhan-cpl', 'icon' => 'check-circle', 'params' => [$kurikulumCtx]],
-                ['label' => 'CPMK & Sub-CPMK',   'route' => 'kurikulum.overview.cpmk',          'icon' => 'document',     'params' => [$kurikulumCtx]],
-                ['label' => 'Rumusan Akhir',      'route' => 'kurikulum.overview.rumusan-akhir', 'icon' => 'calculator',   'params' => [$kurikulumCtx]],
+            // Asesmen & Penilaian
+            ['group' => 'Asesmen', 'icon' => 'calculator', 'children' => [
+                ['label' => 'Peta CPL–CPMK–Semester', 'route' => 'kurikulum.penilaian.peta-semester',   'icon' => 'table',        'params' => [$kurikulumCtx]],
+                ['label' => 'Peta MK–CPMK–Sub-CPMK',  'route' => 'kurikulum.penilaian.mk-cpmk-subcpmk','icon' => 'document',     'params' => [$kurikulumCtx]],
+                ['label' => 'Teknik Penilaian',        'route' => 'kurikulum.penilaian.teknik',          'icon' => 'check-circle', 'params' => [$kurikulumCtx]],
+                ['label' => 'Tahap & Mekanisme',       'route' => 'kurikulum.penilaian.tahap',           'icon' => 'document',     'params' => [$kurikulumCtx]],
+                ['label' => 'Bobot Penilaian',         'route' => 'kurikulum.penilaian.bobot',           'icon' => 'calculator',   'params' => [$kurikulumCtx]],
+                ['label' => 'Rumusan Nilai Akhir MK',  'route' => 'kurikulum.penilaian.rumusan',         'icon' => 'chart-bar',    'params' => [$kurikulumCtx]],
+                ['label' => 'Rumusan Nilai Akhir CPL', 'route' => 'kurikulum.penilaian.rumusan-cpl',     'icon' => 'chart-bar',    'params' => [$kurikulumCtx]],
             ]],
 
             // Administrasi — arsip dan pengelolaan tim
             ['group' => 'Administrasi', 'icon' => 'cog', 'children' => [
-                ['label' => 'Arsip Rapat',   'route' => 'kurikulum.arsip-rapat.index', 'icon' => 'meeting',  'params' => [$kurikulumCtx]],
-                ['label' => 'Tim Kurikulum', 'route' => 'kurikulum.tim.index',         'icon' => 'users',    'params' => [$kurikulumCtx]],
-                ['label' => 'Periode',       'route' => 'kurikulum.periode.index',     'icon' => 'calendar', 'params' => [$kurikulumCtx]],
+                ['label' => 'Arsip Rapat',        'route' => 'kurikulum.arsip-rapat.index', 'icon' => 'meeting',  'params' => [$kurikulumCtx]],
+                ['label' => 'Tim Kurikulum',      'route' => 'kurikulum.tim.index',         'icon' => 'users',    'params' => [$kurikulumCtx]],
+                ['label' => 'Periode',            'route' => 'kurikulum.periode.index',     'icon' => 'calendar', 'params' => [$kurikulumCtx]],
+                ['label' => 'Lesson Learned',     'route' => 'kurikulum.lesson-learned.index', 'icon' => 'document', 'params' => [$kurikulumCtx]],
+                ['label' => 'Checklist LEDIK',    'route' => 'kurikulum.ledik.index',       'icon' => 'check-circle', 'params' => [$kurikulumCtx]],
+                ['label' => 'Distribusi Dokumen', 'route' => 'kurikulum.distribusi.index',  'icon' => 'collection',   'params' => [$kurikulumCtx]],
+                ['label' => 'Generate PDF',       'route' => 'kurikulum.generate-pdf',      'icon' => 'document',     'params' => [$kurikulumCtx]],
             ]],
         ];
     }
@@ -111,19 +134,23 @@
     $kaprodiMenus = array_merge([
         ['label' => 'Dashboard',         'route' => 'kaprodi.dashboard',               'icon' => 'home'],
         ['label' => 'Semester Akademik', 'route' => 'kaprodi.semester-akademik.index', 'icon' => 'calendar'],
+        // Pengampuan MK — prasyarat agar Dosen bisa membuat RPS
+        ['label' => 'Pengampuan MK',     'route' => 'kaprodi.pengampuan.index',        'icon' => 'academic-cap'],
         // openWhen: tetap terbuka di semua halaman kurikulum (termasuk sub-halaman spesifik)
         ['group' => 'Kurikulum & RPS', 'icon' => 'book-open', 'openWhen' => 'kurikulum.*', 'children' => [
-            ['label' => 'Kurikulum',       'route' => 'kurikulum.index',                                            'icon' => 'book-open'],
+            // href (bukan route) agar aturan "tanpa query = tidak aktif saat ada query" berlaku
+            ['label' => 'Kurikulum',       'href'  => route('kurikulum.index'),                        'icon' => 'book-open'],
             ['label' => 'Arsip Kurikulum', 'href'  => route('kurikulum.index', ['status' => 'arsip']), 'icon' => 'archive'],
-            ['label' => 'Persetujuan RPS', 'route' => 'kaprodi.rps-approval.index',                                 'icon' => 'document-check'],
+            ['label' => 'Persetujuan RPS', 'route' => 'kaprodi.rps-approval.index',                    'icon' => 'document-check'],
         ]],
         ['group' => 'Evaluasi & Laporan', 'icon' => 'chart-bar', 'children' => [
             ['label' => 'Evaluasi CQI',  'route' => 'kaprodi.cqi.index',     'icon' => 'chart-bar'],
             ['label' => 'Laporan OBE',   'route' => 'kaprodi.reports.index', 'icon' => 'document-report'],
         ]],
         ['group' => 'Sistem', 'icon' => 'cog', 'children' => [
-            ['label' => 'Audit Trail',    'route' => 'kaprodi.activity-log.index', 'icon' => 'clock'],
-            ['label' => 'Manajemen User', 'route' => 'kaprodi.users.index',        'icon' => 'users'],
+            ['label' => 'Audit Trail',    'route' => 'kaprodi.activity-log.index',    'icon' => 'clock'],
+            ['label' => 'Manajemen User', 'route' => 'kaprodi.users.index',           'icon' => 'users'],
+            ['label' => 'Master Kategori','route' => 'admin.master-kategori.index',   'icon' => 'cog'],
         ]],
     ], $contextualKurikulumMenus);
 
@@ -131,8 +158,12 @@
         ['label' => 'Dashboard', 'route' => 'kurikulum.dashboard', 'icon' => 'home'],
         // openWhen: tetap terbuka di semua halaman kurikulum
         ['group' => 'Kurikulum', 'icon' => 'book-open', 'openWhen' => 'kurikulum.*', 'children' => [
-            ['label' => 'Semua Kurikulum', 'route' => 'kurikulum.index',                                            'icon' => 'book-open'],
+            // href (bukan route) agar aturan "tanpa query = tidak aktif saat ada query" berlaku
+            ['label' => 'Semua Kurikulum', 'href'  => route('kurikulum.index'),                        'icon' => 'book-open'],
             ['label' => 'Arsip Kurikulum', 'href'  => route('kurikulum.index', ['status' => 'arsip']), 'icon' => 'archive'],
+        ]],
+        ['group' => 'Sistem', 'icon' => 'cog', 'children' => [
+            ['label' => 'Master Kategori', 'route' => 'admin.master-kategori.index', 'icon' => 'cog'],
         ]],
     ], $contextualKurikulumMenus);
 
@@ -241,23 +272,35 @@
 
 {{-- Styling berbasis data-state — tiga state tombol grup dropdown --}}
 <style>
-/* Tombol grup: child sedang aktif → background + teks putih */
+/*
+ * Aturan visual sidebar group button:
+ *   - HANYA child item (link <a>) yang boleh punya background highlight (bg-blue-600).
+ *   - Group button (dropdown toggle) TIDAK pernah punya background — hanya warna teks
+ *     dan garis kiri tipis yang membedakan state-nya.
+ *   Ini mencegah "double highlight" di mana parent DAN child terlihat aktif sekaligus.
+ */
+
+/* State: salah satu child adalah halaman aktif saat ini
+   → Teks putih penuh + sedikit lebih terang dari "open".
+   TIDAK ada background — hanya child item (bg-blue-600) yang boleh highlight. */
 .group-toggle[data-state="active"] {
-    background-color: rgb(51 65 85);
     color: rgb(255 255 255);
+    font-weight: 600;
 }
-/* Tombol grup: terbuka via openWhen tapi tidak ada child aktif → teks agak terang, tanpa background */
+
+/* State: dropdown terbuka via openWhen tapi tidak ada child aktif */
 .group-toggle[data-state="open"] {
-    color: rgb(203 213 225);
+    color: rgb(203 213 225); /* slate-300 — sedikit lebih terang dari closed */
 }
-/* Tombol grup: tertutup → teks redup */
+
+/* State: dropdown tertutup */
 .group-toggle[data-state="closed"] {
-    color: rgb(148 163 184);
+    color: rgb(148 163 184); /* slate-400 */
 }
-/* Hover untuk state non-active */
-.group-toggle[data-state="open"]:hover,
-.group-toggle[data-state="closed"]:hover {
-    background-color: rgba(51, 65, 85, 0.6);
+
+/* Hover: berlaku untuk semua state (background ringan saat kursor di atas) */
+.group-toggle:hover {
+    background-color: rgba(51, 65, 85, 0.5); /* slate-700/50 */
     color: rgb(255 255 255);
 }
 </style>

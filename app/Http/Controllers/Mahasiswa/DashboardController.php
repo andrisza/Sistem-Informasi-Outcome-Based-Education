@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Mahasiswa;
 use App\Http\Controllers\Controller;
 use App\Models\EnrollmentMk;
 use App\Models\HasilCpl;
+use App\Models\Kurikulum;
 use App\Models\MataKuliah;
 use App\Models\PengampuanMk;
 use App\Models\RpsHeader;
@@ -87,6 +88,27 @@ class DashboardController extends Controller
             'cplRadar',
             'totalMkDiikuti',
         ));
+    }
+
+    public function kurikulumRingkasan()
+    {
+        // Tampilkan kurikulum aktif atau semua untuk mahasiswa (read-only)
+        $kurikulumList = Kurikulum::with([
+            'pl'          => fn ($q) => $q->orderBy('urutan'),
+            'cplProdi'    => fn ($q) => $q->orderBy('urutan'),
+            'bahanKajian' => fn ($q) => $q->orderBy('urutan'),
+            'mataKuliah'  => fn ($q) => $q->orderBy('semester')->orderBy('kode_mk'),
+        ])
+            ->whereIn('status', ['aktif', 'arsip'])
+            ->orderByDesc('tahun_mulai')
+            ->get();
+
+        $mkBySemester = [];
+        foreach ($kurikulumList as $kur) {
+            $mkBySemester[$kur->id] = $kur->mataKuliah->groupBy('semester');
+        }
+
+        return view('mahasiswa.kurikulum-ringkasan', compact('kurikulumList', 'mkBySemester'));
     }
 
     public function rpsShow(int $mk, int $semester)

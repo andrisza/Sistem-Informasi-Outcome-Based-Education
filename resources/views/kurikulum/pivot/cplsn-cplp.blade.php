@@ -68,9 +68,16 @@
     <span class="text-emerald-600 font-medium">· Auto-save: setiap klik langsung tersimpan</span>
 </div>
 
+{{-- Validation warning --}}
+<div id="mapping-warning" class="hidden mb-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
+    <svg class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    <span id="mapping-warning-text"></span>
+</div>
+
+@include('layouts._search', ['target'=>'cplsn-wrap','placeholder'=>'Cari CPL SN-Dikti atau CPL Prodi...','mode'=>'dim','rowSelector'=>'tbody tr.pivot-row'])
 <div id="pivot-form">
 
-    <div class="rounded-xl border border-amber-200 shadow-sm overflow-hidden">
+    <div id="cplsn-wrap" class="rounded-xl border border-amber-200 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
             <table class="border-collapse" id="pivot-table">
                 <thead>
@@ -89,6 +96,15 @@
                         @endforeach
                     </tr>
                 </thead>
+                @php
+                    $katLabels = [
+                        'Sikap'               => 'SIKAP (S)',
+                        'Keterampilan Umum'   => 'KETERAMPILAN UMUM (KU)',
+                        'Keterampilan Khusus' => 'KETERAMPILAN KHUSUS (KK)',
+                        'Pengetahuan'         => 'PENGETAHUAN (P)',
+                    ];
+                    $katCounts = $cplsnList->groupBy('kategori')->map->count();
+                @endphp
                 <tbody>
                     @php $prevKat = null; $rowNo = 0; @endphp
                     @foreach ($cplsnList as $cplsn)
@@ -96,25 +112,25 @@
                             $kat = $cplsn->kategori ?? 'Lainnya';
                             $rowNo++;
                         @endphp
-                        {{-- Category group row --}}
+                        {{-- Category group header --}}
                         @if ($kat !== $prevKat)
                             @php $prevKat = $kat; @endphp
                             <tr>
                                 <td colspan="{{ $cplpList->count() + 1 }}"
                                     style="background:#FDE68A;color:#78350f"
                                     class="px-4 py-2 text-xs font-bold uppercase tracking-wider border border-amber-300 sticky left-0">
-                                    {{ strtoupper($kat) }}
+                                    {{ $katLabels[$kat] ?? strtoupper($kat) }}
+                                    <span class="ml-1 font-normal opacity-70">({{ $katCounts[$kat] ?? 0 }} CPL)</span>
                                 </td>
                             </tr>
                         @endif
                         {{-- Data row --}}
                         <tr class="pivot-row" style="{{ $rowNo % 2 === 0 ? 'background:#fffbeb' : 'background:#fff' }}">
-                            <td style="min-width:140px;background:{{ $rowNo % 2 === 0 ? '#fef3c7' : '#fffbeb' }}"
+                            <td style="min-width:160px;background:{{ $rowNo % 2 === 0 ? '#fef3c7' : '#fffbeb' }}"
                                 class="px-4 py-2.5 border border-amber-200 sticky left-0 z-10">
                                 <span class="font-mono font-bold text-amber-800 text-xs cursor-help"
                                       data-tooltip="{{ $cplsn->kode }} ({{ $cplsn->kategori }}): {{ $cplsn->deskripsi ?? '' }}"
                                       data-tip-label="CPL SN-Dikti">{{ $cplsn->kode }}</span>
-                                <span class="text-amber-400 ml-1 text-[10px]">{{ $cplsn->kategori }}</span>
                             </td>
                             @foreach ($cplpList as $cplp)
                                 @php $checked = in_array($cplp->id, $existing[$cplsn->id] ?? []); @endphp
@@ -155,6 +171,35 @@
     function refresh() { if (info) info.textContent = document.querySelectorAll('.pivot-cb:checked').length + ' relasi aktif'; }
     document.querySelectorAll('.pivot-cell').forEach(c => c.addEventListener('click', () => setTimeout(refresh, 0)));
     refresh();
+})();
+</script>
+<script>
+// Warning: CPL Prodi columns yang tidak dipetakan ke CPL SNDIKTI manapun
+(function () {
+    var warning  = document.getElementById('mapping-warning');
+    var warnText = document.getElementById('mapping-warning-text');
+    if (!warning) return;
+    function checkWarning() {
+        var table = document.getElementById('pivot-table');
+        if (!table) return;
+        var headers = table.querySelectorAll('thead tr th');
+        var unchecked = [];
+        for (var colIdx = 1; colIdx < headers.length; colIdx++) {
+            var cells = table.querySelectorAll('tbody tr td:nth-child(' + (colIdx + 1) + ') .pivot-cb');
+            var anyChecked = Array.from(cells).some(function (cb) { return cb.checked; });
+            if (cells.length > 0 && !anyChecked) {
+                unchecked.push(headers[colIdx].textContent.trim().split('\n')[0].trim());
+            }
+        }
+        if (unchecked.length > 0) {
+            warnText.textContent = unchecked.length + ' CPL Prodi tidak dipetakan ke CPL SNDIKTI manapun: ' + unchecked.join(', ');
+            warning.classList.remove('hidden');
+        } else {
+            warning.classList.add('hidden');
+        }
+    }
+    document.querySelectorAll('.pivot-cb').forEach(function (cb) { cb.addEventListener('change', checkWarning); });
+    checkWarning();
 })();
 </script>
 @endpush

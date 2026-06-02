@@ -21,30 +21,18 @@
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
         <div class="px-6 py-5 space-y-4">
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Kode CPL <span class="text-red-500">*</span></label>
-                    <input type="text" name="kode_cpl" value="{{ old('kode_cpl', $cplProdi->kode_cpl) }}"
-                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('kode_cpl') border-red-400 @enderror"
-                           placeholder="cth: CPL-01">
-                    @error('kode_cpl') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Urutan <span class="text-red-500">*</span></label>
-                    <input type="number" name="urutan" value="{{ old('urutan', $cplProdi->urutan) }}" min="1"
-                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('urutan') border-red-400 @enderror">
-                    @error('urutan') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-            </div>
-
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Kategori <span class="text-red-500">*</span></label>
                 <select name="kategori"
                         class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('kategori') border-red-400 @enderror">
-                    <option value="">-- Pilih Kategori --</option>
+                    <option value="">— Pilih Kategori —</option>
                     @foreach ($kategoriOptions as $k)
                         <option value="{{ $k }}" {{ old('kategori', $cplProdi->kategori) == $k ? 'selected' : '' }}>{{ $k }}</option>
                     @endforeach
+                    {{-- If existing value is not in the list, show it anyway --}}
+                    @if ($cplProdi->kategori && !$kategoriOptions->contains($cplProdi->kategori))
+                        <option value="{{ $cplProdi->kategori }}" selected>{{ $cplProdi->kategori }}</option>
+                    @endif
                 </select>
                 @error('kategori') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
             </div>
@@ -55,6 +43,13 @@
                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('deskripsi') border-red-400 @enderror"
                           placeholder="Deskripsi CPL Prodi...">{{ old('deskripsi', $cplProdi->deskripsi) }}</textarea>
                 @error('deskripsi') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Referensi</label>
+                <textarea name="referensi" rows="2"
+                          class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="cth: IS2020 A3.1, SKKNI, IABEE...">{{ old('referensi', $cplProdi->referensi) }}</textarea>
             </div>
 
         </div>

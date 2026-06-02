@@ -23,22 +23,6 @@
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
         <div class="px-6 py-5 space-y-4">
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Kode CPMK <span class="text-red-500">*</span></label>
-                    <input type="text" name="kode_cpmk" value="{{ old('kode_cpmk') }}"
-                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('kode_cpmk') border-red-400 @enderror"
-                           placeholder="cth: CPMK-1">
-                    @error('kode_cpmk') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Urutan <span class="text-red-500">*</span></label>
-                    <input type="number" name="urutan" value="{{ old('urutan', $nextUrutan) }}" min="1"
-                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('urutan') border-red-400 @enderror">
-                    @error('urutan') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-            </div>
-
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">CPL Prodi Terkait <span class="text-red-500">*</span></label>
                 <select name="id_cpl"
@@ -51,6 +35,30 @@
                     @endforeach
                 </select>
                 @error('id_cpl') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Level Bloom</label>
+                <select name="level_bloom"
+                        class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('level_bloom') border-red-400 @enderror">
+                    <option value="">-- Tidak Ditentukan --</option>
+                    <optgroup label="Kognitif (C)">
+                        @foreach (['C1','C2','C3','C4','C5','C6'] as $lvl)
+                            <option value="{{ $lvl }}" {{ old('level_bloom') === $lvl ? 'selected' : '' }}>{{ $lvl }}</option>
+                        @endforeach
+                    </optgroup>
+                    <optgroup label="Afektif (A)">
+                        @foreach (['A1','A2','A3','A4','A5'] as $lvl)
+                            <option value="{{ $lvl }}" {{ old('level_bloom') === $lvl ? 'selected' : '' }}>{{ $lvl }}</option>
+                        @endforeach
+                    </optgroup>
+                    <optgroup label="Psikomotorik (P)">
+                        @foreach (['P1','P2','P3','P4','P5'] as $lvl)
+                            <option value="{{ $lvl }}" {{ old('level_bloom') === $lvl ? 'selected' : '' }}>{{ $lvl }}</option>
+                        @endforeach
+                    </optgroup>
+                </select>
+                @error('level_bloom') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
             </div>
 
             <div>

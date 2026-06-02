@@ -13,21 +13,22 @@
 
 <div class="max-w-2xl">
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
-        <form method="POST" action="{{ route('dosen.rps.store') }}" class="space-y-5">
+        <form method="POST" action="{{ route('dosen.rps.store') }}" class="space-y-5" id="rps-form">
             @csrf
 
-            {{-- Pilih MK --}}
+            {{-- Pilih MK — sertakan data-kode untuk auto-generate kode dokumen --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">
                     Mata Kuliah <span class="text-red-500">*</span>
                 </label>
-                <select name="id_mk" required
+                <select name="id_mk" id="id_mk" required
                         class="w-full border rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500
                                {{ $errors->has('id_mk') ? 'border-red-400' : 'border-gray-300' }}">
                     <option value="">— Pilih Mata Kuliah —</option>
                     @foreach ($pengampuan as $p)
                         <option value="{{ $p->id_mk }}"
-                                data-semester="{{ $p->id_semester }}"
+                                data-kode-mk="{{ $p->mataKuliah->kode_mk ?? '' }}"
+                                data-semester-id="{{ $p->id_semester }}"
                                 {{ old('id_mk') == $p->id_mk ? 'selected' : '' }}>
                             {{ $p->mataKuliah->kode_mk ?? '' }} — {{ $p->mataKuliah->nama_mk ?? '' }}
                             ({{ $p->semester->nama ?? '' }})
@@ -37,49 +38,37 @@
                 @error('id_mk')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
             </div>
 
-            {{-- Pilih Semester --}}
+            {{-- Pilih Semester — sertakan data untuk auto-generate kode dokumen --}}
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">
                     Semester <span class="text-red-500">*</span>
                 </label>
-                <select name="id_semester" required
+                <select name="id_semester" id="id_semester" required
                         class="w-full border rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500
                                {{ $errors->has('id_semester') ? 'border-red-400' : 'border-gray-300' }}">
                     <option value="">— Pilih Semester —</option>
                     @foreach ($semesters as $sem)
-                        <option value="{{ $sem->id }}" {{ old('id_semester') == $sem->id ? 'selected' : '' }}>
-                            {{ $sem->nama }} — {{ $sem->tahun_akademik }}
-                            @if($sem->is_aktif) (Aktif) @endif
+                        <option value="{{ $sem->id }}"
+                                data-jenis="{{ $sem->jenis }}"
+                                data-tahun="{{ $sem->tahun_akademik }}"
+                                {{ old('id_semester') == $sem->id ? 'selected' : '' }}>
+                            {{ $sem->nama }}{{ $sem->is_aktif ? ' ★ (Aktif)' : '' }}
                         </option>
                     @endforeach
                 </select>
                 @error('id_semester')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                {{-- Tanggal Penyusunan --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                        Tanggal Penyusunan <span class="text-red-500">*</span>
-                    </label>
-                    <input type="date" name="tanggal_penyusunan"
-                           value="{{ old('tanggal_penyusunan', now()->format('Y-m-d')) }}" required
-                           class="w-full border rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500
-                                  {{ $errors->has('tanggal_penyusunan') ? 'border-red-400' : 'border-gray-300' }}">
-                    @error('tanggal_penyusunan')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
-                </div>
-
-                {{-- Kode Dokumen --}}
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1.5">
-                        Kode Dokumen <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" name="kode_dokumen" value="{{ old('kode_dokumen') }}" required
-                           placeholder="Contoh: RPS/SI/001/2025"
-                           class="w-full border rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500
-                                  {{ $errors->has('kode_dokumen') ? 'border-red-400' : 'border-gray-300' }}">
-                    @error('kode_dokumen')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
-                </div>
+            {{-- Tanggal Penyusunan --}}
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                    Tanggal Penyusunan <span class="text-red-500">*</span>
+                </label>
+                <input type="date" name="tanggal_penyusunan"
+                       value="{{ old('tanggal_penyusunan', now()->format('Y-m-d')) }}" required
+                       class="w-full border rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500
+                              {{ $errors->has('tanggal_penyusunan') ? 'border-red-400' : 'border-gray-300' }}">
+                @error('tanggal_penyusunan')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
             </div>
 
             {{-- Actions --}}
@@ -96,3 +85,4 @@
 </div>
 
 @endsection
+

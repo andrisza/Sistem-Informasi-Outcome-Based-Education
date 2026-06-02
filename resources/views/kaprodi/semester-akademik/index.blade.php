@@ -41,7 +41,7 @@
                         {{ $semester->nama }}
                     </td>
                     <td class="px-5 py-3.5 text-gray-600">
-                        {{ $semester->tahun_ajaran }}
+                        {{ $semester->tahun_akademik ?: '—' }}
                     </td>
                     <td class="px-5 py-3.5 text-gray-600">
                         {{ $semester->tanggal_mulai?->format('d M Y') ?? '—' }}

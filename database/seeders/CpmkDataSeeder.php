@@ -58,8 +58,14 @@ class CpmkDataSeeder extends Seeder
         }
 
         $this->syncPivotCplCpmk($kurikulum);
+        $this->syncPivotMkCpl($kurikulum);
     }
 
+    /**
+     * Seed CPMK dan Sub-CPMK dengan format kode sesuai skema diagram OBE:
+     *   CPMK{cpl_urutan_2digit}{cpmk_seq_1digit} → contoh: CPMK031
+     *   Sub-CPMK{cpl_2digit}{cpmk_1digit}{sub_1digit} → contoh: Sub-CPMK0311
+     */
     private function seedCpmkForMk(Kurikulum $k, MataKuliah $mk, $cplIds, $cplById): void
     {
         $seq = 1;
@@ -67,7 +73,10 @@ class CpmkDataSeeder extends Seeder
             if (!isset($cplById[$cplId])) continue;
             $cpl = $cplById[$cplId];
 
-            $kodeCpmk = sprintf('CPMK-%s-%d', $mk->kode_mk, $seq);
+            // Format CPMK: CPMK{cpl_urutan_2digit}{cpmk_seq_1digit} → CPMK031
+            $cplSeq   = str_pad($cpl->urutan, 2, '0', STR_PAD_LEFT);
+            $kodeCpmk = 'CPMK' . $cplSeq . $seq;
+
             $deskCpmk = sprintf(
                 'Mahasiswa mampu memahami, menerapkan, dan menganalisis konsep %s yang terkait dengan capaian %s.',
                 $mk->nama_mk,
@@ -85,12 +94,13 @@ class CpmkDataSeeder extends Seeder
             );
 
             // 2 Sub-CPMK per CPMK
+            // Format Sub-CPMK: Sub-CPMK{cpl_2digit}{cpmk_1digit}{sub_1digit} → Sub-CPMK0311
             $subs = [
                 [1, sprintf('Memahami konsep dasar dan teori %s.', $mk->nama_mk), 50.00],
                 [2, sprintf('Menerapkan %s dalam studi kasus / praktik.', $mk->nama_mk), 50.00],
             ];
             foreach ($subs as [$subSeq, $subDesc, $subBobot]) {
-                $kodeSub = sprintf('SUB-%s-%d.%d', $mk->kode_mk, $seq, $subSeq);
+                $kodeSub = 'Sub-CPMK' . $cplSeq . $seq . $subSeq;
                 SubCpmk::updateOrCreate(
                     ['id_cpmk' => $cpmk->id, 'kode_sub_cpmk' => $kodeSub],
                     ['deskripsi' => $subDesc, 'bobot' => $subBobot, 'urutan' => $subSeq]
@@ -132,6 +142,30 @@ class CpmkDataSeeder extends Seeder
                     'skor_maks'      => $skor,
                 ]
             );
+        }
+    }
+
+    /**
+     * Sinkronisasi pivot_mk_cpl dari CPMK yang sudah ada.
+     */
+    private function syncPivotMkCpl(Kurikulum $k): void
+    {
+        $cpmks = Cpmk::where('id_kurikulum', $k->id)->get();
+        $rows = [];
+        foreach ($cpmks as $c) {
+            $rows[] = [
+                'id_mk'   => $c->id_mk,
+                'id_cpl'  => $c->id_cpl,
+                'id_cpmk' => $c->id,
+                'bobot'   => 1.00,
+            ];
+        }
+        if (empty($rows)) return;
+        // Delete existing then reinsert to avoid duplicate key issues
+        $mkIds = $cpmks->pluck('id_mk')->unique()->values()->all();
+        DB::table('pivot_mk_cpl')->whereIn('id_mk', $mkIds)->delete();
+        foreach (array_chunk($rows, 500) as $chunk) {
+            DB::table('pivot_mk_cpl')->insert($chunk);
         }
     }
 

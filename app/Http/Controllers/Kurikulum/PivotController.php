@@ -271,7 +271,9 @@ class PivotController extends Controller
 
     public function cplsnCplp(Kurikulum $kurikulum)
     {
-        $cplsnList = CplSndikti::orderBy('urutan')->get();
+        $cplsnList = CplSndikti::orderByRaw("FIELD(kategori, 'Sikap', 'Keterampilan Umum', 'Keterampilan Khusus', 'Pengetahuan')")
+            ->orderBy('urutan')
+            ->get();
         $cplpList  = $kurikulum->cplProdi()->orderBy('urutan')->get();
 
         $existing = DB::table('pivot_cplsn_cplp')

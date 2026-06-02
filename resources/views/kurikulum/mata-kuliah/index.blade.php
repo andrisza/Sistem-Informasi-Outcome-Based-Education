@@ -66,6 +66,9 @@
     </div>
 @else
 
+@include('layouts._search', ['target'=>'mk-index-wrap','placeholder'=>'Cari kode MK atau nama...','mode'=>'hide','rowSelector'=>'tbody tr'])
+<div id="mk-index-wrap">
+
 @foreach ($bySmester as $smt => $mks)
 @php
     $smtSks = $mks->sum('sks_total');
@@ -88,6 +91,7 @@
                 <tr style="background:#FEF3C7">
                     <th class="px-4 py-2.5 text-left text-xs font-bold text-amber-900 border border-amber-200 w-28">Kode MK</th>
                     <th class="px-4 py-2.5 text-left text-xs font-bold text-amber-900 border border-amber-200">Nama Mata Kuliah</th>
+                    <th class="px-3 py-2.5 text-center text-xs font-bold text-amber-900 border border-amber-200 w-24">Kompetensi</th>
                     <th class="px-3 py-2.5 text-center text-xs font-bold text-amber-900 border border-amber-200 w-14">T</th>
                     <th class="px-3 py-2.5 text-center text-xs font-bold text-amber-900 border border-amber-200 w-14">P</th>
                     <th class="px-3 py-2.5 text-center text-xs font-bold text-amber-900 border border-amber-200 w-16">SKS</th>
@@ -106,10 +110,25 @@
                         <td class="px-4 py-3 border border-amber-100">
                             <span class="font-mono font-bold text-blue-800 text-xs bg-blue-50 px-2 py-0.5 rounded"
                                   data-tooltip="{{ $mk->kode_mk }}: {{ $mk->nama_mk }} (Smt {{ $mk->semester }}, {{ $mk->sks_total }} SKS)">{{ $mk->kode_mk }}</span>
+                            @if ($mk->kode_prasyarat)
+                                <div class="mt-1">
+                                    <span class="inline-flex items-center gap-1 text-[10px] text-orange-700 bg-orange-50 border border-orange-200 px-1.5 py-0.5 rounded" title="Prasyarat">
+                                        <svg class="w-2.5 h-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01"/></svg>
+                                        {{ $mk->kode_prasyarat }}
+                                    </span>
+                                </div>
+                            @endif
                         </td>
                         <td class="px-4 py-3 border border-amber-100">
                             <a href="{{ route('kurikulum.mata-kuliah.show', [$kurikulum, $mk]) }}"
                                class="font-medium text-gray-800 hover:text-blue-700 hover:underline text-sm">{{ $mk->nama_mk }}</a>
+                        </td>
+                        <td class="px-3 py-3 text-center border border-amber-100">
+                            @if (($mk->kompetensi_mk ?? 'Utama') === 'Utama')
+                                <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">Utama</span>
+                            @else
+                                <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">Pendukung</span>
+                            @endif
                         </td>
                         <td class="px-3 py-3 text-center text-gray-600 text-xs border border-amber-100">{{ $mk->sks_teori }}</td>
                         <td class="px-3 py-3 text-center text-gray-600 text-xs border border-amber-100">{{ $mk->sks_praktikum }}</td>
@@ -118,6 +137,21 @@
                         </td>
                         <td class="px-4 py-3 text-center border border-amber-100">
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium {{ $kc['badge'] }}">{{ $mk->kategori_mk }}</span>
+                            @if ($mk->konsentrasi)
+                                @php
+                                    $konsCls = match($mk->konsentrasi) {
+                                        'Manajemen TI'   => 'bg-sky-100 text-sky-700',
+                                        'Data Analytics' => 'bg-purple-100 text-purple-700',
+                                        'Bisnis Digital' => 'bg-rose-100 text-rose-700',
+                                        default          => 'bg-gray-100 text-gray-600',
+                                    };
+                                @endphp
+                                <div class="mt-1">
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium {{ $konsCls }}">
+                                        {{ $mk->konsentrasi }}
+                                    </span>
+                                </div>
+                            @endif
                         </td>
                         <td class="px-3 py-3 text-center border border-amber-100">
                             @if ($mk->cpmk_count > 0)
@@ -164,6 +198,8 @@
     </div>
 </div>
 @endforeach
+
+</div>{{-- #mk-index-wrap --}}
 
 @endif
 

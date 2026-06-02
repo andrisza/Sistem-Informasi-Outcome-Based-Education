@@ -113,6 +113,23 @@ class Kurikulum extends Model
         return $this->hasMany(LogEvaluasiCqi::class, 'id_kurikulum');
     }
 
+    public function lessonLearned(): HasMany
+    {
+        return $this->hasMany(LessonLearned::class, 'id_kurikulum');
+    }
+
+    public function checklistLedik(): HasMany
+    {
+        return $this->hasMany(ChecklistLedik::class, 'id_kurikulum');
+    }
+
+    public function logDistribusi(): HasMany
+    {
+        return $this->hasMany(LogDistribusi::class, 'id_kurikulum');
+    }
+
+    // Tim Kurikulum diakses via Periode (tidak ada FK langsung ke kurikulum)
+
     // ── Helpers ────────────────────────────────────────────────
 
     public function statusColor(): string

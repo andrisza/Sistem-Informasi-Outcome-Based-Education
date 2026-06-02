@@ -21,22 +21,6 @@
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
         <div class="px-6 py-5 space-y-4">
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Kode BK <span class="text-red-500">*</span></label>
-                    <input type="text" name="kode_bk" value="{{ old('kode_bk', $bahanKajian->kode_bk) }}"
-                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('kode_bk') border-red-400 @enderror"
-                           placeholder="cth: BK01">
-                    @error('kode_bk') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Urutan <span class="text-red-500">*</span></label>
-                    <input type="number" name="urutan" value="{{ old('urutan', $bahanKajian->urutan) }}" min="1"
-                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('urutan') border-red-400 @enderror">
-                    @error('urutan') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-            </div>
-
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Nama Bahan Kajian <span class="text-red-500">*</span></label>
                 <input type="text" name="nama_bk" value="{{ old('nama_bk', $bahanKajian->nama_bk) }}"
@@ -50,6 +34,25 @@
                 <textarea name="deskripsi" rows="3"
                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                           placeholder="Deskripsi singkat bahan kajian (opsional)...">{{ old('deskripsi', $bahanKajian->deskripsi) }}</textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Kompetensi</label>
+                    <select name="kompetensi"
+                            class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">— Pilih Kompetensi —</option>
+                        <option value="Utama"     {{ old('kompetensi', $bahanKajian->kompetensi) === 'Utama'     ? 'selected' : '' }}>Utama</option>
+                        <option value="Pendukung" {{ old('kompetensi', $bahanKajian->kompetensi) === 'Pendukung' ? 'selected' : '' }}>Pendukung</option>
+                        <option value="Umum"      {{ old('kompetensi', $bahanKajian->kompetensi) === 'Umum'      ? 'selected' : '' }}>Umum</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-gray-700 mb-1">Referensi</label>
+                    <input type="text" name="referensi" value="{{ old('referensi', $bahanKajian->referensi) }}"
+                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="cth: IS2020, IABEE">
+                </div>
             </div>
 
         </div>

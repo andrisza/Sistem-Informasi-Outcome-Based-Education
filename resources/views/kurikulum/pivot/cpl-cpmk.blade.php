@@ -72,8 +72,9 @@
     <span class="text-gray-400">· Hover kode untuk deskripsi · CPMK dikelompokkan per MK & Semester</span>
 </div>
 
+@include('layouts._search', ['target'=>'cpl-cpmk-wrap','placeholder'=>'Cari CPL atau CPMK...','mode'=>'dim','rowSelector'=>'tbody tr'])
 <div id="pivot-form">
-    <div class="rounded-xl border border-amber-200 shadow-sm overflow-hidden">
+    <div id="cpl-cpmk-wrap" class="rounded-xl border border-amber-200 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
             <table class="border-collapse">
                 <thead>

@@ -5,11 +5,15 @@ namespace App\Http\Controllers\Kurikulum;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Kurikulum;
+use App\Models\MasterKategori;
 use App\Models\MataKuliah;
+use App\Traits\GeneratesObeKode;
 use Illuminate\Http\Request;
 
 class MataKuliahController extends Controller
 {
+    use GeneratesObeKode;
+
     public function index(Kurikulum $kurikulum)
     {
         $mkList = $kurikulum->mataKuliah()
@@ -25,20 +29,28 @@ class MataKuliahController extends Controller
 
     public function create(Kurikulum $kurikulum)
     {
-        $kategoriOptions = ['Wajib', 'Pilihan', 'MKWK', 'MKDU'];
-        return view('kurikulum.mata-kuliah.create', compact('kurikulum', 'kategoriOptions'));
+        $nextKode      = $this->generateKodeMk($kurikulum);
+        $kategoriOptions = MasterKategori::jenis('mk')->aktif()->orderBy('urutan')->pluck('nama');
+
+        return view('kurikulum.mata-kuliah.create', compact('kurikulum', 'nextKode', 'kategoriOptions'));
     }
 
     public function store(Request $request, Kurikulum $kurikulum)
     {
         $validated = $request->validate([
-            'kode_mk'      => 'required|string|max:50',
-            'nama_mk'      => 'required|string|max:255',
-            'sks_teori'    => 'required|integer|min:0',
-            'sks_praktikum'=> 'required|integer|min:0',
-            'semester'     => 'required|integer|min:1|max:14',
-            'kategori_mk'  => 'required|in:Wajib,Pilihan,MKWK,MKDU',
+            'kode_mk'        => 'nullable|string|max:50|unique:mata_kuliah,kode_mk,NULL,id,id_kurikulum,' . $kurikulum->id,
+            'nama_mk'        => 'required|string|max:255',
+            'sks_teori'      => 'required|integer|min:0',
+            'sks_praktikum'  => 'required|integer|min:0',
+            'semester'       => 'required|integer|min:1|max:14',
+            'kategori_mk'    => 'required|string|max:50',
+            'kompetensi_mk'  => 'nullable|in:Utama,Pendukung',
+            'kode_prasyarat' => 'nullable|string|max:20',
         ]);
+
+        if (empty($validated['kode_mk'])) {
+            $validated['kode_mk'] = $this->generateKodeMk($kurikulum);
+        }
 
         $validated['id_kurikulum'] = $kurikulum->id;
         // sks_total is a MySQL generated column (sks_teori + sks_praktikum) — must NOT be set explicitly
@@ -62,19 +74,21 @@ class MataKuliahController extends Controller
 
     public function edit(Kurikulum $kurikulum, MataKuliah $mataKuliah)
     {
-        $kategoriOptions = ['Wajib', 'Pilihan', 'MKWK', 'MKDU'];
+        $kategoriOptions = MasterKategori::jenis('mk')->aktif()->orderBy('urutan')->pluck('nama');
         return view('kurikulum.mata-kuliah.edit', compact('kurikulum', 'mataKuliah', 'kategoriOptions'));
     }
 
     public function update(Request $request, Kurikulum $kurikulum, MataKuliah $mataKuliah)
     {
         $validated = $request->validate([
-            'kode_mk'      => 'required|string|max:50',
-            'nama_mk'      => 'required|string|max:255',
-            'sks_teori'    => 'required|integer|min:0',
-            'sks_praktikum'=> 'required|integer|min:0',
-            'semester'     => 'required|integer|min:1|max:14',
-            'kategori_mk'  => 'required|in:Wajib,Pilihan,MKWK,MKDU',
+            'kode_mk'        => 'required|string|max:50',
+            'nama_mk'        => 'required|string|max:255',
+            'sks_teori'      => 'required|integer|min:0',
+            'sks_praktikum'  => 'required|integer|min:0',
+            'semester'       => 'required|integer|min:1|max:14',
+            'kategori_mk'    => 'required|string|max:50',
+            'kompetensi_mk'  => 'nullable|in:Utama,Pendukung',
+            'kode_prasyarat' => 'nullable|string|max:20',
         ]);
 
         // sks_total is a MySQL generated column — must NOT be set explicitly
@@ -101,5 +115,12 @@ class MataKuliahController extends Controller
         return redirect()
             ->route('kurikulum.mata-kuliah.index', $kurikulum)
             ->with('success', 'Mata Kuliah berhasil dihapus.');
+    }
+
+    private function generateKodeMk(Kurikulum $kurikulum): string
+    {
+        // Format: MK{nn} — contoh: MK01, MK02, MK51
+        $count = $kurikulum->mataKuliah()->withTrashed()->count() + 1;
+        return 'MK' . str_pad($count, 2, '0', STR_PAD_LEFT);
     }
 }

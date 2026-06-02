@@ -23,21 +23,6 @@
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
         <div class="px-6 py-5 space-y-4">
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Kode Sub-CPMK <span class="text-red-500">*</span></label>
-                    <input type="text" name="kode_sub_cpmk" value="{{ old('kode_sub_cpmk', $subCpmk->kode_sub_cpmk) }}"
-                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('kode_sub_cpmk') border-red-400 @enderror">
-                    @error('kode_sub_cpmk') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Urutan <span class="text-red-500">*</span></label>
-                    <input type="number" name="urutan" value="{{ old('urutan', $subCpmk->urutan) }}" min="1"
-                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('urutan') border-red-400 @enderror">
-                    @error('urutan') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-            </div>
-
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Deskripsi <span class="text-red-500">*</span></label>
                 <textarea name="deskripsi" rows="3"

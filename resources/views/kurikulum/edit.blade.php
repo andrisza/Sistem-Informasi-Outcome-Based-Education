@@ -27,13 +27,6 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
                 <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Kode Kurikulum <span class="text-red-500">*</span></label>
-                    <input type="text" name="kode" value="{{ old('kode', $kurikulum->kode) }}"
-                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('kode') border-red-400 @enderror">
-                    @error('kode') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-
-                <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Jenjang <span class="text-red-500">*</span></label>
                     <select name="jenjang"
                             class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('jenjang') border-red-400 @enderror">

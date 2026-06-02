@@ -65,9 +65,16 @@
     <span class="text-violet-700 font-medium">· Perubahan otomatis menyinkronkan MK↔CPL & CPL↔BK↔MK</span>
 </div>
 
+{{-- Validation warning --}}
+<div id="mapping-warning" class="hidden mb-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
+    <svg class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    <span id="mapping-warning-text"></span>
+</div>
+
+@include('layouts._search', ['target'=>'mk-bk-wrap','placeholder'=>'Cari MK atau BK (kode/nama)...','mode'=>'dim','rowSelector'=>'tbody tr.pivot-row'])
 <div id="pivot-form">
 
-    <div class="rounded-xl border border-amber-200 shadow-sm overflow-hidden">
+    <div id="mk-bk-wrap" class="rounded-xl border border-amber-200 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
             <table class="border-collapse" id="pivot-table">
                 <thead>
@@ -78,7 +85,7 @@
                         @foreach ($bkList as $bk)
                             <th style="background:#F59E0B;min-width:68px" class="px-2 py-3 text-center text-xs font-bold text-white border border-amber-400">
                                 <span class="font-mono cursor-help block"
-                                      data-tooltip="{{ $bk->kode_bk }}: {{ $bk->nama_bk }}{{ $bk->deskripsi ? ' — '.Str::limit($bk->deskripsi, 80) : '' }}"
+                                      data-tooltip="{{ $bk->kode_bk }}: {{ $bk->nama_bk }}{{ $bk->deskripsi ? ' — '.$bk->deskripsi : '' }}"
                                       data-tip-label="Bahan Kajian">{{ $bk->kode_bk }}</span>
                             </th>
                         @endforeach
@@ -148,6 +155,35 @@
     function refresh() { if (info) info.textContent = document.querySelectorAll('.pivot-cb:checked').length + ' relasi aktif'; }
     document.querySelectorAll('.pivot-cell').forEach(c => c.addEventListener('click', () => setTimeout(refresh, 0)));
     refresh();
+})();
+</script>
+<script>
+// Warning: BK columns yang semua unchecked
+(function () {
+    var warning  = document.getElementById('mapping-warning');
+    var warnText = document.getElementById('mapping-warning-text');
+    if (!warning) return;
+    function checkWarning() {
+        var table = document.getElementById('pivot-table');
+        if (!table) return;
+        var headers = table.querySelectorAll('thead tr th');
+        var unchecked = [];
+        for (var colIdx = 1; colIdx < headers.length; colIdx++) {
+            var cells = table.querySelectorAll('tbody tr td:nth-child(' + (colIdx + 1) + ') .pivot-cb');
+            var anyChecked = Array.from(cells).some(function (cb) { return cb.checked; });
+            if (cells.length > 0 && !anyChecked) {
+                unchecked.push(headers[colIdx].textContent.trim().split('\n')[0].trim());
+            }
+        }
+        if (unchecked.length > 0) {
+            warnText.textContent = unchecked.length + ' BK tidak dipetakan ke MK manapun: ' + unchecked.join(', ');
+            warning.classList.remove('hidden');
+        } else {
+            warning.classList.add('hidden');
+        }
+    }
+    document.querySelectorAll('.pivot-cb').forEach(function (cb) { cb.addEventListener('change', checkWarning); });
+    checkWarning();
 })();
 </script>
 @endpush

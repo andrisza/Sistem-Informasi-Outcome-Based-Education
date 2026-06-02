@@ -120,7 +120,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // ── 3. KURIKULUM ──────────────────────────────────────────────────────
-        $kurikulum = Kurikulum::firstOrCreate(['kode' => 'KUR-SI-2021'], [
+        // Kode otomatis format: K-{PRODI}-{JENJANG}-{TAHUN} → K-SI-S1-2021
+        $kurikulum = Kurikulum::firstOrCreate(['kode' => 'K-SI-S1-2021'], [
             'nama_kurikulum' => 'Kurikulum Sistem Informasi 2021',
             'program_studi'  => 'Sistem Informasi',
             'jenjang'        => 'S1',
@@ -186,19 +187,23 @@ class DatabaseSeeder extends Seeder
         $cpl2  = CplProdi::where('id_kurikulum', $kurikulum->id)->where('kode_cpl', 'CPL02')->firstOrFail();
 
         // ── 13. CPMK ──────────────────────────────────────────────────────────
-        $cpmk1 = Cpmk::firstOrCreate(['id_mk' => $mkPbw->id, 'kode_cpmk' => 'CPMK-MK22-1'], [
+        // Format kode: CPMK{cpl_urutan_2digit}{seq_1digit}
+        // cpl1 = CPL03 (urutan=3) → CPMK031 (MK22, CPL03, urutan ke-1)
+        // cpl2 = CPL02 (urutan=2) → CPMK021 (MK22, CPL02, urutan ke-1)
+        // cpl2 pada MK21         → CPMK021 (MK21, CPL02, urutan ke-1)
+        $cpmk1 = Cpmk::firstOrCreate(['id_mk' => $mkPbw->id, 'kode_cpmk' => 'CPMK031'], [
             'id_kurikulum' => $kurikulum->id,
             'id_cpl'       => $cpl1->id,
             'deskripsi'    => 'Mahasiswa mampu membangun aplikasi web sederhana.',
             'urutan'       => 1,
         ]);
-        $cpmk2 = Cpmk::firstOrCreate(['id_mk' => $mkPbw->id, 'kode_cpmk' => 'CPMK-MK22-2'], [
+        $cpmk2 = Cpmk::firstOrCreate(['id_mk' => $mkPbw->id, 'kode_cpmk' => 'CPMK021'], [
             'id_kurikulum' => $kurikulum->id,
             'id_cpl'       => $cpl2->id,
             'deskripsi'    => 'Mahasiswa mampu mengintegrasikan database ke aplikasi web.',
             'urutan'       => 2,
         ]);
-        $cpmkBd = Cpmk::firstOrCreate(['id_mk' => $mkBd->id, 'kode_cpmk' => 'CPMK-MK21-1'], [
+        $cpmkBd = Cpmk::firstOrCreate(['id_mk' => $mkBd->id, 'kode_cpmk' => 'CPMK021'], [
             'id_kurikulum' => $kurikulum->id,
             'id_cpl'       => $cpl2->id,
             'deskripsi'    => 'Mahasiswa mampu merancang skema basis data.',
@@ -206,17 +211,20 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // ── 14. SUB-CPMK ─────────────────────────────────────────────────────
-        $sub1 = SubCpmk::firstOrCreate(['id_cpmk' => $cpmk1->id, 'kode_sub_cpmk' => 'SUB-1.1'], [
+        // Format: Sub-CPMK{cpl_2digit}{cpmk_1digit}{sub_1digit}
+        // cpmk1 = CPMK031 → Sub-CPMK0311, Sub-CPMK0312
+        // cpmk2 = CPMK021 → Sub-CPMK0211
+        $sub1 = SubCpmk::firstOrCreate(['id_cpmk' => $cpmk1->id, 'kode_sub_cpmk' => 'Sub-CPMK0311'], [
             'deskripsi' => 'Membuat halaman HTML dan CSS yang responsif.',
             'bobot'     => 40.00,
             'urutan'    => 1,
         ]);
-        $sub2 = SubCpmk::firstOrCreate(['id_cpmk' => $cpmk1->id, 'kode_sub_cpmk' => 'SUB-1.2'], [
+        $sub2 = SubCpmk::firstOrCreate(['id_cpmk' => $cpmk1->id, 'kode_sub_cpmk' => 'Sub-CPMK0312'], [
             'deskripsi' => 'Mengimplementasikan logika JavaScript dasar.',
             'bobot'     => 60.00,
             'urutan'    => 2,
         ]);
-        $sub3 = SubCpmk::firstOrCreate(['id_cpmk' => $cpmk2->id, 'kode_sub_cpmk' => 'SUB-2.1'], [
+        $sub3 = SubCpmk::firstOrCreate(['id_cpmk' => $cpmk2->id, 'kode_sub_cpmk' => 'Sub-CPMK0211'], [
             'deskripsi' => 'Menghubungkan PHP ke MySQL untuk operasi CRUD.',
             'bobot'     => 100.00,
             'urutan'    => 1,

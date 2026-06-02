@@ -21,10 +21,11 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">
                     Nama Semester <span class="text-red-500">*</span>
                 </label>
-                <input type="text" name="nama" value="{{ old('nama') }}" required
-                       placeholder="Ganjil 2024/2025"
+                <input type="text" name="nama" id="nama_semester" value="{{ old('nama') }}" required
+                       placeholder="cth: Ganjil 2025/2026"
                        class="w-full border rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500
                               {{ $errors->has('nama') ? 'border-red-400' : 'border-gray-300' }}">
+                <p class="mt-1 text-xs text-gray-400">Format: [Ganjil/Genap/Pendek] [Tahun]/[Tahun+1] — contoh: Ganjil 2025/2026</p>
                 @error('nama')<p class="mt-1 text-xs text-red-500">{{ $message }}</p>@enderror
             </div>
 
@@ -88,3 +89,24 @@
 </div>
 
 @endsection
+
+@push('scripts')
+<script>
+(function () {
+    var namaEl  = document.getElementById('nama_semester');
+    var tahunEl = document.querySelector('[name="tahun_akademik"]');
+    var jenisEl = document.querySelector('[name="jenis"]');
+    if (!namaEl || !tahunEl) return;
+    namaEl.addEventListener('input', function () {
+        var val = namaEl.value.trim();
+        var tahunMatch = val.match(/\d{4}\/\d{4}/);
+        if (tahunMatch && !tahunEl.value) tahunEl.value = tahunMatch[0];
+        if (jenisEl && !jenisEl.value) {
+            if (/ganjil/i.test(val))  jenisEl.value = 'Ganjil';
+            else if (/genap/i.test(val))  jenisEl.value = 'Genap';
+            else if (/pendek/i.test(val)) jenisEl.value = 'Pendek';
+        }
+    });
+})();
+</script>
+@endpush

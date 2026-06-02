@@ -25,6 +25,9 @@ class MataKuliah extends Model
         // sks_total is a MySQL GENERATED column — excluded from fillable
         'semester',
         'kategori_mk',
+        'kompetensi_mk',
+        'kode_prasyarat',
+        'konsentrasi',
     ];
 
     // ── Relationships ──────────────────────────────────────────────────────────

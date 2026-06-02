@@ -12,18 +12,20 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Seed lengkap data kurikulum S1 Sistem Informasi
- * Sumber: dokumen kurikulum OBE Prodi SI (PL, CPL, BK, MK semester 1–8)
+ * Seed data kurikulum S1 Sistem Informasi
+ * Sumber: Buku Panduan Kurikulum OBE/KKNI/SKKNI APTIKOM v2.0 (2024)
+ * Tabel 1 (PL), Tabel 2 (CPL), Tabel 4 (BK), Tabel 9 (MK),
+ * Tabel 3 (PL-CPL), Tabel 5 (CPL-BK), Tabel 6 (MK-BK), Tabel 7 (MK-CPL)
  */
 class CurriculumDataSeeder extends Seeder
 {
     public function seedFor(Kurikulum $kurikulum): void
     {
         $this->seedCplSndikti();
-        $pl   = $this->seedPl($kurikulum);
-        $cpl  = $this->seedCplProdi($kurikulum);
-        $bk   = $this->seedBahanKajian($kurikulum);
-        $mk   = $this->seedMataKuliah($kurikulum);
+        $pl  = $this->seedPl($kurikulum);
+        $cpl = $this->seedCplProdi($kurikulum);
+        $bk  = $this->seedBahanKajian($kurikulum);
+        $mk  = $this->seedMataKuliah($kurikulum);
 
         $this->seedPivotPlCpl($pl, $cpl);
         $this->seedPivotCplBk($cpl, $bk);
@@ -31,22 +33,39 @@ class CurriculumDataSeeder extends Seeder
         $this->seedPivotCplsnCplp($cpl);
     }
 
-    // ── PROFIL LULUSAN ───────────────────────────────────────────────────────
+    // ── PROFIL LULUSAN (Buku Tabel 1) ────────────────────────────────────────
     private function seedPl(Kurikulum $kurikulum): array
     {
+        // [kode, deskripsi, kategori, referensi, urutan]
         $data = [
-            ['PL1', 'Lulusan memiliki kemampuan untuk merencanakan, menganalisis, merancang, membangun, mengujicoba, menerapkan, dan mengevaluasi sistem informasi (bidang x) dalam sebuah proyek yang selaras dengan tujuan organisasi (peta okupasi dalam KKNI Bidang TIK dan IS2020).', 'PL Penciri Utama', 1],
-            ['PL2', 'Lulusan memiliki kemampuan memahami, menerapkan, dan mengintegrasikan model bisnis dengan menggunakan metode dan berbagai teknik peningkatan bisnis proses yang mendatangkan suatu nilai tambah bagi organisasi (peta okupasi dalam KKNI Bidang TIK dan IS2020).', 'PL Penciri Utama', 2],
-            ['PL3', 'Lulusan memiliki kemampuan untuk mengolah, menganalisis, dan menyajikan data yang dikembangkan dengan konsep big data dan business intelligence untuk membantu dalam proses pengambilan keputusan (peta okupasi dalam KKNI Bidang TIK).', 'PL Tambahan KK dan P', 3],
-            ['PL4', 'Lulusan memiliki sikap religius, beretika, dan peka terhadap lingkungan sosial sebagai seorang warga negara dengan berlandaskan nilai ahlussunah waljamaah (Aswaja).', 'PL Sikap', 4],
-            ['PL5', 'Lulusan memiliki kemampuan berpikir kritis dan inovatif, bekerja mandiri, membuat keputusan tepat, mendokumentasikan data dengan benar, menyusun karya ilmiah, berkomunikasi efektif, membangun jaringan kerja, bertanggung jawab atas hasil tim, dan mengelola pembelajaran secara mandiri sesuai bidang keahliannya.', 'PL Keterampilan Umum dan Sikap', 5],
+            [
+                'PL01',
+                'Lulusan memiliki kemampuan menganalisis, merancang, mengembangkan, dan menjamin kualitas sistem informasi sesuai dengan kebutuhan pengguna serta standar industri.',
+                'Kompetensi Utama',
+                'IS2020, Permendikbudristek No. 53/2023, SKKNI level 6 bidang TIK',
+                1,
+            ],
+            [
+                'PL02',
+                'Lulusan memiliki kemampuan memahami, menerapkan dan mengintegrasikan model sistem, menggunakan metode dan berbagai teknik peningkatan bisnis proses yang mendatangkan suatu nilai untuk organisasi.',
+                'Kompetensi Utama',
+                'IS2020, Permendikbudristek No. 53/2023, SKKNI level 6 bidang TIK',
+                2,
+            ],
+            [
+                'PL03',
+                'Mampu untuk bekerja secara kolaboratif, proaktif, dan bertanggungjawab dalam tim untuk mencapai tujuan bersama dalam berbagai konteks profesional.',
+                'Kompetensi Sikap',
+                'IABEE, ABET',
+                3,
+            ],
         ];
 
         $out = [];
-        foreach ($data as [$kode, $desc, $kategori, $urut]) {
+        foreach ($data as [$kode, $desc, $kategori, $ref, $urutan]) {
             $out[$kode] = Pl::updateOrCreate(
                 ['id_kurikulum' => $kurikulum->id, 'kode_pl' => $kode],
-                ['deskripsi' => $desc, 'kategori' => $kategori, 'urutan' => $urut]
+                ['deskripsi' => $desc, 'kategori' => $kategori, 'referensi' => $ref, 'urutan' => $urutan]
             );
         }
         return $out;
@@ -76,7 +95,7 @@ class CurriculumDataSeeder extends Seeder
             ['CPL-KU05', 'Mampu mengambil keputusan secara tepat dalam konteks penyelesaian masalah di bidang keahliannya.'],
             ['CPL-KU06', 'Mampu memelihara dan mengembangkan jaringan kerja dengan pembimbing, kolega, sejawat.'],
             ['CPL-KU07', 'Mampu bertanggungjawab atas pencapaian hasil kerja kelompok dan melakukan supervisi serta evaluasi.'],
-            ['CPL-KU08', 'Mampu melakukan proses evaluasi diri terhadap kelompok kerja yang berada dibawah tanggung jawabnya.'],
+            ['CPL-KU08', 'Mampu melakukan proses evaluasi diri terhadap kelompok kerja yang berada di bawah tanggung jawabnya.'],
             ['CPL-KU09', 'Mampu mendokumentasikan, menyimpan, mengamankan, dan menemukan kembali data untuk menjamin kesahihan dan mencegah plagiasi.'],
             ['CPL-KU10', 'Berkomunikasi secara efektif dalam berbagai konteks profesional.'],
         ];
@@ -107,148 +126,201 @@ class CurriculumDataSeeder extends Seeder
         $insert($p,     'Pengetahuan');
     }
 
-    // ── CPL PRODI ────────────────────────────────────────────────────────────
+    // ── CPL PRODI (Buku Tabel 2) ─────────────────────────────────────────────
     private function seedCplProdi(Kurikulum $kurikulum): array
     {
+        // [kode, deskripsi, kategori, referensi, urutan]
         $data = [
-            ['CPL01', 'Mampu memahami, menganalisis, dan menilai konsep dasar dan peran sistem informasi dalam mengelola data dan memberikan rekomendasi pengambilan keputusan pada proses dan sistem organisasi.', 'Pengetahuan'],
-            ['CPL02', 'Mampu merancang dan menggunakan database, serta mengolah dan menganalisa data dengan alat dan teknik pengolahan data.', 'Keterampilan Khusus'],
-            ['CPL03', 'Mampu memahami dan menggunakan berbagai metodologi pengembangan sistem beserta alat pemodelan sistem dan menganalisa kebutuhan pengguna dalam membangun sistem informasi untuk mencapai tujuan organisasi.', 'Keterampilan Khusus'],
-            ['CPL04', 'Mampu membuat perencanaan infrastruktur TI, arsitektur jaringan, layanan fisik dan cloud, menganalisa keamanan, identifikasi ancaman, dan mengatasi risiko keamanan sistem.', 'Keterampilan Khusus'],
-            ['CPL05', 'Mampu menerapkan kode etik dan memahami implikasi sosial penggunaan teknologi informasi.', 'Sikap'],
-            ['CPL06', 'Mampu menerapkan konsep dan mengevaluasi manajemen proses bisnis, integrasi sistem informasi dengan strategi organisasi.', 'Keterampilan Khusus'],
-            ['CPL07', 'Mampu mengelola proyek sistem informasi dengan menerapkan prinsip manajemen proyek dan kepemimpinan.', 'Keterampilan Khusus'],
-            ['CPL08', 'Mampu mengolah, menganalisis, dan menyajikan data dengan konsep big data dan business intelligence.', 'Keterampilan Khusus'],
-            ['CPL09', 'Mampu menerapkan jiwa kewirausahaan, inovasi, dan rintisan bisnis digital.', 'Keterampilan Khusus'],
-            ['CPL10', 'Memiliki sikap religius, beretika, bertanggung jawab, dan menjunjung tinggi nilai kemanusiaan, sosial, dan budaya.', 'Sikap'],
-            ['CPL11', 'Memiliki semangat kemandirian, kejuangan, kewirausahaan, dan internalisasi nilai ahlussunah waljamaah.', 'Sikap'],
-            ['CPL12', 'Mampu menerapkan pemikiran logis, kritis, sistematis, dan inovatif dalam pengembangan ipteks.', 'Keterampilan Umum'],
-            ['CPL13', 'Mampu menyusun deskripsi saintifik dan mendokumentasikan hasil kajian dalam bentuk laporan ilmiah serta berkomunikasi efektif.', 'Keterampilan Umum'],
-            ['CPL14', 'Mampu mengambil keputusan tepat, bertanggung jawab atas kerja tim, dan melakukan evaluasi diri secara berkelanjutan.', 'Keterampilan Umum'],
+            [
+                'CPL01',
+                'Mampu memahami, menganalisis permasalahan computing yang kompleks, dan menilai konsep dasar serta peran sistem informasi dalam mengelola data dan memberikan rekomendasi pengambilan keputusan pada sistem organisasi.',
+                'Pengetahuan',
+                'IS2020 A3.1 Foundations Competency Realm; SKKNI Area Fungsi Information System and Technology Development; IABEE, ABET',
+                1,
+            ],
+            [
+                'CPL02',
+                'Mampu memahami, merancang, menggunakan sistem manajemen basis data, serta mengolah dan menganalisa data dengan peralatan dan metode pengolahan data.',
+                'Keterampilan Khusus',
+                'IS2020 A3.2.1 Data/Information Management; SKKNI Area Fungsi Data Management System',
+                2,
+            ],
+            [
+                'CPL03',
+                'Mampu memahami dan menggunakan berbagai metodologi pengembangan sistem beserta alat pemodelan sistem serta menganalisis kebutuhan pengguna dalam membangun sistem informasi yang berkualitas untuk mencapai tujuan organisasi.',
+                'Keterampilan Khusus',
+                'IS2020 A3.4.1 System Analysis and Design; A3.4.2 Application Development and Programming; SKKNI Area Fungsi Programming and Software Development',
+                3,
+            ],
+            [
+                'CPL04',
+                'Mampu menganalisis infrastruktur SI, arsitektur jaringan, layanan fisik dan cloud, konsep identifikasi, otentikasi, otorisasi akses dalam konteks melindungi orang dan perangkat.',
+                'Keterampilan Khusus',
+                'IS2020 A3.3 Technology Competency Realm; SKKNI Area Fungsi IT Security and Compliance; SKKNI Area Fungsi Network and Infrastructure',
+                4,
+            ],
+            [
+                'CPL05',
+                'Mampu memahami dan menerapkan kode etik organisasi dalam penggunaan informasi maupun data pada perancangan dan implementasi suatu sistem.',
+                'Sikap',
+                'IS2020 A3.5.1 IS Ethics, Sustainability, User and Implication',
+                5,
+            ],
+            [
+                'CPL06',
+                'Memiliki kemampuan merencanakan, menerapkan, memelihara serta meningkatkan sistem informasi organisasi untuk mencapai tujuan dan sasaran organisasi yang strategis baik jangka pendek maupun jangka panjang.',
+                'Keterampilan Khusus',
+                'IS2020 A3.5.2 Competency Area – IS Management and Strategy; SKKNI IT and Computing Facilities Management',
+                6,
+            ],
+            [
+                'CPL07',
+                'Mampu memahami, mengidentifikasi dan menerapkan konsep, teknik dan metodologi manajemen proyek sistem informasi terintegrasi untuk peningkatan proses bisnis organisasi.',
+                'Keterampilan Khusus',
+                'IS2020 A3.6.1 IS Project Management; SKKNI Area Fungsi IT Project Management',
+                7,
+            ],
         ];
 
         $out = [];
-        foreach ($data as $i => [$kode, $desc, $kategori]) {
+        foreach ($data as [$kode, $desc, $kategori, $ref, $urutan]) {
             $out[$kode] = CplProdi::updateOrCreate(
                 ['id_kurikulum' => $kurikulum->id, 'kode_cpl' => $kode],
-                ['deskripsi' => $desc, 'kategori' => $kategori, 'urutan' => $i + 1]
+                ['deskripsi' => $desc, 'kategori' => $kategori, 'referensi' => $ref, 'urutan' => $urutan]
             );
         }
         return $out;
     }
 
-    // ── BAHAN KAJIAN ─────────────────────────────────────────────────────────
+    // ── BAHAN KAJIAN (Buku Tabel 4) ──────────────────────────────────────────
     private function seedBahanKajian(Kurikulum $kurikulum): array
     {
+        // [kode, nama, deskripsi, kompetensi, referensi, urutan]
         $data = [
-            ['BK01', 'Foundation of Information Systems',          'Dasar-dasar sistem informasi.'],
-            ['BK02', 'Data / Information Management',              'Pengelolaan data dan informasi.'],
-            ['BK03', 'Infrastructure',                             'Infrastruktur TI dan jaringan.'],
-            ['BK04', 'Project Management',                         'Manajemen proyek SI.'],
-            ['BK05', 'Systems Analysis & Design',                  'Analisis dan perancangan sistem.'],
-            ['BK06', 'IS Management and Strategy',                 'Manajemen dan strategi sistem informasi.'],
-            ['BK07', 'Application Development / Programming',      'Pengembangan aplikasi dan pemrograman.'],
-            ['BK08', 'Secure Computing',                           'Keamanan komputasi dan sistem.'],
-            ['BK09', 'Ethics, use and implications for society',   'Etika dan implikasi sosial TI.'],
-            ['BK10', 'Praktikum',                                  'Praktik laboratorium.'],
-            ['BK11', 'Mathematics and Statistics',                 'Matematika dan statistika.'],
-            ['BK12', 'Data / Business Analytics',                  'Analitik data dan bisnis.'],
-            ['BK13', 'Personality Development',                    'Pengembangan kepribadian.'],
-            ['BK14', 'Business Process Management',                'Manajemen proses bisnis.'],
-            ['BK15', 'Enterprise Architecture',                    'Arsitektur enterprise.'],
-            ['BK16', 'User Interface Design',                      'Perancangan antarmuka pengguna.'],
-            ['BK17', 'Digital Innovation',                         'Inovasi digital.'],
-            ['BK18', 'Visualisasi Informasi',                      'Visualisasi data dan informasi.'],
-            ['BK19', 'Pemrograman Berorientasi Objek',             'Konsep dan praktik OOP.'],
-            ['BK20', 'Pemrograman Web',                            'Pengembangan aplikasi web.'],
-            ['BK21', 'Pemrograman Mobile',                         'Pengembangan aplikasi mobile.'],
+            ['BK01', 'Foundation of Information Systems',
+                'Memperkenalkan konsep dasar sistem informasi untuk mendukung proses bisnis transaksional, keputusan, dan kolaboratif dengan menggunakan alat dan metode pengembangan IS yang relevan.',
+                'Utama', 'IS2020', 1],
+            ['BK02', 'Data/Information Management',
+                'Fokus pada cara mengelola data dan informasi sebagai aset bisnis, termasuk teknik penyimpanan, pengambilan, dan pengolahan basis data serta prinsip-prinsip manajemen beserta keamanan basis data.',
+                'Utama', 'IS2020', 2],
+            ['BK03', 'IT Infrastructure',
+                'Fokus pada enterprise architecture yang mencakup pemahaman tentang komponen fisik dan virtual yang membentuk infrastruktur IT, termasuk perangkat keras, perangkat lunak, jaringan, dan cloud computing.',
+                'Utama', 'IS2020', 3],
+            ['BK04', 'IS Project Management',
+                'Pembelajaran tentang metodologi dan teknik manajemen proyek untuk mengelola proyek-proyek sistem informasi, termasuk perencanaan, pengorganisasian, pengendalian, dan penutupan proyek.',
+                'Utama', 'IS2020', 4],
+            ['BK05', 'Systems Analysis & Design',
+                'Mempelajari proses analisis kebutuhan dan desain sistem informasi yang efektif, termasuk teknik pemodelan sistem, pengembangan diagram, dan pembuatan spesifikasi sistem.',
+                'Utama', 'IS2020', 5],
+            ['BK06', 'IS Management and Strategy',
+                'Fokus pada pengembangan strategi untuk pengelolaan sistem informasi yang selaras dengan tujuan bisnis, termasuk pengelolaan sumber daya IT, tata kelola IT, dan penerapan kebijakan teknologi.',
+                'Utama', 'IS2020', 6],
+            ['BK07', 'Application Development/Programming',
+                'Fokus dalam pengembangan aplikasi dan pemrograman, termasuk penggunaan bahasa pemrograman, framework, dan alat pengembangan untuk menciptakan solusi perangkat lunak.',
+                'Utama', 'IS2020', 7],
+            ['BK08', 'Secure Computing',
+                'Menekankan pada pentingnya keamanan informasi dan sistem, termasuk konsep dasar keamanan komputer, enkripsi, pengelolaan ancaman, dan pengendalian akses.',
+                'Utama', 'IS2020', 8],
+            ['BK09', 'Ethics, use and implications for society',
+                'Mengeksplorasi aspek etika penggunaan teknologi informasi, dampak sosial, privasi, dan implikasi hukum dari implementasi sistem informasi dalam masyarakat.',
+                'Utama', 'IS2020', 9],
+            ['BK10', 'Internship',
+                'Program magang yang memberikan pengalaman praktis bagi mahasiswa dalam dunia kerja nyata di bidang sistem informasi, memungkinkan mahasiswa menerapkan pengetahuan yang telah diperoleh.',
+                'Utama', 'IABEE', 10],
+            ['BK11', 'Mathematics and Statistics',
+                'Membangun dasar pengetahuan matematika dan statistik yang diperlukan untuk analisis data, pemodelan, dan pengambilan keputusan yang berbasis data dalam sistem informasi.',
+                'Utama', 'IABEE', 11],
+            ['BK12', 'Research Methodology',
+                'Mencakup langkah-langkah sistematis dalam melakukan penelitian di bidang sistem informasi, mulai dari perumusan masalah, tinjauan literatur, pemilihan metode, hingga analisis data.',
+                'Umum', null, 12],
+            ['BK13', 'Data/Business Analytics',
+                'Memperkenalkan teknik dan alat analisis data untuk pengambilan keputusan bisnis, termasuk penggunaan big data, data mining, dan analisis prediktif.',
+                'Pendukung', 'IS2020', 13],
+            ['BK14', 'Personality Development',
+                'Pengembangan keterampilan interpersonal dan soft skills, seperti komunikasi, kerja sama tim, dan manajemen waktu yang penting bagi profesional di bidang sistem informasi.',
+                'Pendukung', 'IS2020/IABEE', 14],
+            ['BK15', 'Business Process Management',
+                'Fokus pada analisis, desain, implementasi, pemantauan, dan penyempurnaan proses bisnis untuk meningkatkan efisiensi dan efektivitas manajemen bisnis.',
+                'Pendukung', 'IS2020/ASIIN', 15],
+            ['BK16', 'Enterprise Architecture',
+                'Pembelajaran tentang bagaimana merancang dan mengelola arsitektur organisasi secara holistik untuk memastikan bahwa teknologi informasi sejalan dengan tujuan strategis bisnis.',
+                'Pendukung', 'CC2020', 16],
+            ['BK17', 'User Interface Design',
+                'Prinsip dan praktik desain antarmuka pengguna yang efektif, termasuk pemahaman tentang pengalaman pengguna (UX), navigasi, dan desain interaksi yang intuitif.',
+                'Pendukung', 'IS2020', 17],
+            ['BK18', 'Emerging Technologies',
+                'Eksplorasi teknologi-teknologi baru dan inovatif seperti kecerdasan buatan, Internet of Things (IoT), blockchain, dan teknologi disruptif lainnya.',
+                'Pendukung', 'IS2020', 18],
+            ['BK19', 'Digital Innovation',
+                'Pengembangan ide-ide inovatif dan penerapan solusi digital untuk menciptakan nilai baru bagi bisnis dan masyarakat, termasuk pemikiran desain dan kewirausahaan digital.',
+                'Pendukung', 'IS2020', 19],
         ];
 
         $out = [];
-        foreach ($data as $i => [$kode, $nama, $desc]) {
+        foreach ($data as [$kode, $nama, $desc, $kompetensi, $ref, $urutan]) {
             $out[$kode] = BahanKajian::updateOrCreate(
                 ['id_kurikulum' => $kurikulum->id, 'kode_bk' => $kode],
-                ['nama_bk' => $nama, 'deskripsi' => $desc, 'urutan' => $i + 1]
+                [
+                    'nama_bk'    => $nama,
+                    'deskripsi'  => $desc,
+                    'kompetensi' => $kompetensi,
+                    'referensi'  => $ref,
+                    'urutan'     => $urutan,
+                ]
             );
         }
         return $out;
     }
 
-    // ── MATA KULIAH (Semester 1–8) ───────────────────────────────────────────
+    // ── MATA KULIAH (Buku Tabel 9) ───────────────────────────────────────────
     private function seedMataKuliah(Kurikulum $kurikulum): array
     {
-        // [kode, nama, sks_teori, sks_praktikum, semester, kategori]
+        // [kode, nama, sks_teori, sks_prak, semester, kategori_mk, kompetensi_mk]
         $data = [
-            // Semester 1 (18 SKS, 7 MK)
-            ['MK01', 'Agama',                              3, 0, 1, 'MKWK'],
-            ['MK02', 'Pancasila',                          2, 0, 1, 'MKWK'],
-            ['MK03', 'Bahasa Indonesia',                   2, 0, 1, 'MKWK'],
-            ['MK04', 'Pengantar Sistem Informasi',         3, 0, 1, 'Wajib'],
-            ['MK05', 'Algoritma dan Pemrograman',          2, 1, 1, 'Wajib'],
-            ['MK06', 'Literasi TIK',                       1, 1, 1, 'Wajib'],
-            ['MK07', 'Matematika Diskrit',                 3, 0, 1, 'Wajib'],
+            // Semester 1
+            ['MK01', 'Konsep Sistem Informasi',          3, 0, 1, 'Wajib',  'Utama'],
+            ['MK07', 'Pengantar Teknologi Informasi',    3, 0, 1, 'Wajib',  'Utama'],
+            ['MK14', 'Pemrograman Dasar',                2, 1, 1, 'Wajib',  'Utama'],
 
-            // Semester 2 (18 SKS, 8 MK)
-            ['MK08', 'Aswaja',                             2, 0, 2, 'MKDU'],
-            ['MK09', 'Kewarganegaraan',                    2, 0, 2, 'MKWK'],
-            ['MK10', 'Logika dan Metode Berfikir Kritis',  2, 0, 2, 'MKDU'],
-            ['MK11', 'Manajemen Data',                     2, 0, 2, 'Wajib'],
-            ['MK12', 'Struktur Data',                      2, 0, 2, 'Wajib'],
-            ['MK13', 'Sistem Operasi',                     2, 0, 2, 'Wajib'],
-            ['MK14', 'Pengantar Manajemen',                3, 0, 2, 'Wajib'],
-            ['MK15', 'Manajemen Proses Bisnis',            3, 0, 2, 'Wajib'],
+            // Semester 2
+            ['MK02', 'Sistem Informasi Manajemen',       3, 0, 2, 'Wajib',  'Utama'],
+            ['MK03', 'Sistem Basis Data',                2, 1, 2, 'Wajib',  'Utama'],
+            ['MK05', 'Sistem Operasi',                   3, 0, 2, 'Wajib',  'Utama'],
+            ['MK23', 'Statistika dan Probabilitas',      3, 0, 2, 'Wajib',  'Utama'],
 
-            // Semester 3 (19 SKS, 6 MK)
-            ['MK16', 'Bahasa Inggris',                     3, 0, 3, 'MKDU'],
-            ['MK17', 'Pengantar Akuntansi',                3, 0, 3, 'Wajib'],
-            ['MK18', 'Pemrograman Berorientasi Objek',     2, 1, 3, 'Wajib'],
-            ['MK19', 'Analisis dan Perancangan Sistem Informasi', 3, 0, 3, 'Wajib'],
-            ['MK20', 'Desain UI/UX',                       2, 1, 3, 'Wajib'],
-            ['MK21', 'Sistem dan Manajemen Basis Data',    3, 1, 3, 'Wajib'],
+            // Semester 3
+            ['MK04', 'Sistem Basis Data Lanjut',         2, 1, 3, 'Wajib',  'Utama'],
+            ['MK06', 'Jaringan Komputer',                2, 1, 3, 'Wajib',  'Utama'],
+            ['MK15', 'Transformasi Digital',             3, 0, 3, 'Wajib',  'Utama'],
+            ['MK16', 'Pemrograman Berorientasi Objek',   2, 1, 3, 'Wajib',  'Utama'],
+            ['MK20', 'Kepemimpinan dan Manajemen Organisasi', 3, 0, 3, 'Wajib', 'Utama'],
 
-            // Semester 4 (20 SKS, 7 MK)
-            ['MK22', 'Pemrograman Web',                    2, 1, 4, 'Wajib'],
-            ['MK23', 'Manajemen Proyek Sistem Informasi',  3, 0, 4, 'Wajib'],
-            ['MK24', 'Data Science',                       2, 0, 4, 'Wajib'],
-            ['MK25', 'Sistem Enterprise',                  3, 0, 4, 'Wajib'],
-            ['MK26', 'Rintisan Bisnis Digital',            3, 0, 4, 'Wajib'],
-            ['MK27', 'Desain dan Manajemen Jaringan Komputer', 2, 1, 4, 'Wajib'],
-            ['MK28', 'Riset Operasi',                      3, 0, 4, 'Wajib'],
+            // Semester 4
+            ['MK10', 'Analisis dan Perancangan Sistem Informasi', 3, 0, 4, 'Wajib', 'Utama'],
+            ['MK17', 'Pemrograman Berbasis Web',         2, 1, 4, 'Wajib',  'Utama'],
+            ['MK18', 'Keamanan Jaringan',                3, 0, 4, 'Wajib',  'Utama'],
+            ['MK21', 'Etika Profesi dan Profesional',    3, 0, 4, 'Wajib',  'Utama'],
 
-            // Semester 5 (22 SKS, 7 MK)
-            ['MK29', 'Pengujian Perangkat Lunak',          2, 1, 5, 'Wajib'],
-            ['MK30', 'Tata Kelola Teknologi Informasi',    3, 0, 5, 'Wajib'],
-            ['MK31', 'Keamanan Sistem Informasi',          3, 0, 5, 'Wajib'],
-            ['MK32', 'Business Intelligence',              2, 1, 5, 'Wajib'],
-            ['MK33', 'E-Business',                         3, 0, 5, 'Wajib'],
-            ['MK34', 'Metodologi Penelitian',              3, 0, 5, 'Wajib'],
-            ['MK35', 'Audit Sistem Informasi',             3, 0, 5, 'Wajib'],
+            // Semester 5
+            ['MK08', 'Manajemen Proyek Sistem Informasi', 3, 0, 5, 'Wajib', 'Utama'],
+            ['MK12', 'Tata Kelola Teknologi Informasi',  3, 0, 5, 'Wajib',  'Utama'],
 
-            // Semester 6 (16 SKS, 6 MK – 4 wajib + 2 pilihan)
-            ['MK36', 'Statistika',                         3, 0, 6, 'MKDU'],
-            ['MK37', 'Manajemen Layanan Teknologi Informasi', 3, 0, 6, 'Wajib'],
-            ['MK38', 'Sistem Terdistribusi',               2, 1, 6, 'Wajib'],
-            ['MK39', 'Kerja Praktek',                      0, 3, 6, 'Wajib'],
-            ['MK40', 'Pilihan: Pemrograman Mobile',        2, 1, 6, 'Pilihan'],
-            ['MK41', 'Pilihan: Cloud Computing',           2, 1, 6, 'Pilihan'],
+            // Semester 6
+            ['MK11', 'Software Testing dan Quality Assurance', 2, 1, 6, 'Wajib', 'Utama'],
+            ['MK13', 'Audit Sistem Informasi',           3, 0, 6, 'Wajib',  'Utama'],
+            ['MK19', 'Keamanan Sistem Informasi',        3, 0, 6, 'Wajib',  'Utama'],
+            ['MK25', 'Kerja Praktek/Magang',             0, 3, 6, 'Wajib',  'Utama'],
 
-            // Semester 7 (15 SKS, 5 MK – 4 wajib + 1 pilihan)
-            ['MK42', 'Kuliah Kerja Nyata (KKN)',           0, 3, 7, 'MKDU'],
-            ['MK43', 'Seminar Proposal Skripsi',           0, 3, 7, 'Wajib'],
-            ['MK44', 'Etika Profesi',                      3, 0, 7, 'Wajib'],
-            ['MK45', 'Pilihan: Internet of Things',        2, 1, 7, 'Pilihan'],
-            ['MK46', 'Pilihan: Pengembangan Game',         2, 1, 7, 'Pilihan'],
+            // Semester 7
+            ['MK09', 'Proyek Sistem Informasi',          2, 2, 7, 'Wajib',  'Utama'],
+            ['MK22', 'Metodologi Penelitian',            3, 0, 7, 'Wajib',  'Utama'],
 
-            // Semester 8 (17 SKS, 5 MK – 3 wajib + 2 pilihan)
-            ['MK47', 'Skripsi',                            0, 6, 8, 'Wajib'],
-            ['MK48', 'Pengabdian Kepada Masyarakat',       0, 3, 8, 'Wajib'],
-            ['MK49', 'Kapita Selekta Sistem Informasi',    2, 0, 8, 'Wajib'],
-            ['MK50', 'Pilihan: Data Mining Lanjut',        2, 1, 8, 'Pilihan'],
-            ['MK51', 'Pilihan: Manajemen Inovasi Digital', 2, 1, 8, 'Pilihan'],
+            // Semester 8
+            ['MK24', 'Tugas Akhir',                      0, 6, 8, 'Wajib',  'Utama'],
         ];
 
         $out = [];
-        foreach ($data as [$kode, $nama, $teori, $prak, $sem, $kat]) {
+        foreach ($data as [$kode, $nama, $teori, $prak, $sem, $kat, $kompetensimk]) {
             $out[$kode] = MataKuliah::updateOrCreate(
                 ['id_kurikulum' => $kurikulum->id, 'kode_mk' => $kode],
                 [
@@ -257,139 +329,89 @@ class CurriculumDataSeeder extends Seeder
                     'sks_praktikum' => $prak,
                     'semester'      => $sem,
                     'kategori_mk'   => $kat,
+                    'kompetensi_mk' => $kompetensimk,
                 ]
             );
         }
         return $out;
     }
 
-    // ── PIVOT PL ↔ CPL ───────────────────────────────────────────────────────
+    // ── PIVOT PL ↔ CPL (Buku Tabel 3) ────────────────────────────────────────
     private function seedPivotPlCpl(array $pl, array $cpl): void
     {
-        // Matriks dari dokumen kurikulum (PL1..PL5 → CPL01..CPL14)
+        // PL → [CPL yang dipenuhi]
         $matrix = [
-            'CPL01' => ['PL1', 'PL2', 'PL3', 'PL5'],
-            'CPL02' => ['PL2'],
-            'CPL03' => ['PL1'],
-            'CPL04' => ['PL1'],
-            'CPL05' => ['PL1', 'PL2', 'PL3', 'PL4', 'PL5'],
-            'CPL06' => ['PL2'],
-            'CPL07' => ['PL1'],
-            'CPL08' => ['PL3'],
-            'CPL09' => ['PL2'],
-            'CPL10' => ['PL4'],
-            'CPL11' => ['PL4'],
-            'CPL12' => ['PL5'],
-            'CPL13' => ['PL5'],
-            'CPL14' => ['PL5'],
+            'PL01' => ['CPL01', 'CPL02', 'CPL03', 'CPL04', 'CPL06'],
+            'PL02' => ['CPL02', 'CPL03', 'CPL05', 'CPL06', 'CPL07'],
+            'PL03' => ['CPL05', 'CPL07'],
         ];
 
         $rows = [];
-        foreach ($matrix as $cplKode => $plKodes) {
-            if (!isset($cpl[$cplKode])) continue;
-            foreach ($plKodes as $plKode) {
-                if (!isset($pl[$plKode])) continue;
+        foreach ($matrix as $plKode => $cplKodes) {
+            if (!isset($pl[$plKode])) continue;
+            foreach ($cplKodes as $cplKode) {
+                if (!isset($cpl[$cplKode])) continue;
                 $rows[] = ['id_pl' => $pl[$plKode]->id, 'id_cpl' => $cpl[$cplKode]->id];
             }
         }
         DB::table('pivot_pl_cpl')->upsert($rows, ['id_pl', 'id_cpl']);
     }
 
-    // ── PIVOT CPL ↔ BK ───────────────────────────────────────────────────────
+    // ── PIVOT CPL ↔ BK (Buku Tabel 5) ────────────────────────────────────────
     private function seedPivotCplBk(array $cpl, array $bk): void
     {
-        // Matriks BK ↔ CPL (BK01..BK21 → CPL01..CPL14)
+        // CPL → [BK yang mendukung]
         $matrix = [
-            'BK01' => ['CPL01', 'CPL02', 'CPL05', 'CPL07', 'CPL09'],
-            'BK02' => ['CPL02', 'CPL08'],
-            'BK03' => ['CPL04'],
-            'BK04' => ['CPL07'],
-            'BK05' => ['CPL03'],
-            'BK06' => ['CPL06'],
-            'BK07' => ['CPL03'],
-            'BK08' => ['CPL04'],
-            'BK09' => ['CPL05', 'CPL10', 'CPL11'],
-            'BK10' => ['CPL02', 'CPL07', 'CPL12', 'CPL13', 'CPL14'],
-            'BK11' => ['CPL02', 'CPL08'],
-            'BK12' => ['CPL08'],
-            'BK13' => ['CPL05', 'CPL10', 'CPL11', 'CPL12', 'CPL13', 'CPL14'],
-            'BK14' => ['CPL09'],
-            'BK15' => ['CPL04', 'CPL06'],
-            'BK16' => ['CPL03'],
-            'BK17' => ['CPL09'],
-            'BK18' => ['CPL08'],
-            'BK19' => ['CPL03'],
-            'BK20' => ['CPL03'],
-            'BK21' => ['CPL03'],
+            'CPL01' => ['BK01', 'BK02', 'BK04'],
+            'CPL02' => ['BK02', 'BK05', 'BK11'],
+            'CPL03' => ['BK05', 'BK06', 'BK07', 'BK10', 'BK12'],
+            'CPL04' => ['BK03', 'BK08'],
+            'CPL05' => ['BK09'],
+            'CPL06' => ['BK04', 'BK05', 'BK06'],
+            'CPL07' => ['BK04', 'BK05', 'BK06', 'BK10', 'BK12'],
         ];
 
         $rows = [];
-        foreach ($matrix as $bkKode => $cplKodes) {
-            if (!isset($bk[$bkKode])) continue;
-            foreach ($cplKodes as $cplKode) {
-                if (!isset($cpl[$cplKode])) continue;
+        foreach ($matrix as $cplKode => $bkKodes) {
+            if (!isset($cpl[$cplKode])) continue;
+            foreach ($bkKodes as $bkKode) {
+                if (!isset($bk[$bkKode])) continue;
                 $rows[] = ['id_cpl' => $cpl[$cplKode]->id, 'id_bk' => $bk[$bkKode]->id];
             }
         }
         DB::table('pivot_cpl_bk')->upsert($rows, ['id_cpl', 'id_bk']);
     }
 
-    // ── PIVOT MK ↔ BK ────────────────────────────────────────────────────────
+    // ── PIVOT MK ↔ BK (Buku Tabel 6) ─────────────────────────────────────────
     private function seedPivotMkBk(array $mk, array $bk): void
     {
-        // Matriks MK ↔ BK dari dokumen (MK01..MK51)
+        // MK → [BK yang dikandung]
         $matrix = [
-            'MK01' => ['BK09', 'BK13'],
-            'MK02' => ['BK09', 'BK13'],
-            'MK03' => ['BK13'],
-            'MK04' => ['BK01'],
-            'MK05' => ['BK07'],
-            'MK06' => ['BK01', 'BK03'],
-            'MK07' => ['BK11'],
-            'MK08' => ['BK13'],
-            'MK09' => ['BK13'],
-            'MK10' => ['BK11'],
-            'MK11' => ['BK02', 'BK11'],
-            'MK12' => ['BK07'],
-            'MK13' => ['BK03'],
-            'MK14' => ['BK06'],
-            'MK15' => ['BK14'],
-            'MK16' => ['BK13'],
-            'MK17' => ['BK05'],
-            'MK18' => ['BK07', 'BK19'],
-            'MK19' => ['BK05'],
-            'MK20' => ['BK05', 'BK16'],
-            'MK21' => ['BK02'],
-            'MK22' => ['BK07', 'BK20'],
-            'MK23' => ['BK04'],
-            'MK24' => ['BK02', 'BK11', 'BK12'],
-            'MK25' => ['BK14', 'BK15'],
-            'MK26' => ['BK17'],
-            'MK27' => ['BK03'],
-            'MK28' => ['BK11'],
-            'MK29' => ['BK07', 'BK10'],
-            'MK30' => ['BK06'],
-            'MK31' => ['BK08'],
-            'MK32' => ['BK12', 'BK18'],
-            'MK33' => ['BK06', 'BK17'],
-            'MK34' => ['BK10'],
-            'MK35' => ['BK06', 'BK08'],
-            'MK36' => ['BK11'],
-            'MK37' => ['BK06'],
-            'MK38' => ['BK03', 'BK15'],
-            'MK39' => ['BK10'],
-            'MK40' => ['BK21'],
-            'MK41' => ['BK03'],
-            'MK42' => ['BK13'],
-            'MK43' => ['BK10'],
-            'MK44' => ['BK09'],
-            'MK45' => ['BK17'],
-            'MK46' => ['BK17'],
-            'MK47' => ['BK10'],
-            'MK48' => ['BK09', 'BK13'],
-            'MK49' => ['BK17'],
-            'MK50' => ['BK12'],
-            'MK51' => ['BK17'],
+            'MK01' => ['BK01'],
+            'MK02' => ['BK01'],
+            'MK03' => ['BK02', 'BK05'],
+            'MK04' => ['BK02', 'BK05'],
+            'MK05' => ['BK03'],
+            'MK06' => ['BK03'],
+            'MK07' => ['BK03'],
+            'MK08' => ['BK04', 'BK05', 'BK06'],
+            'MK09' => ['BK04', 'BK05', 'BK06'],
+            'MK10' => ['BK05', 'BK06'],
+            'MK11' => ['BK05', 'BK07'],
+            'MK12' => ['BK06'],
+            'MK13' => ['BK06'],
+            'MK14' => ['BK07'],
+            'MK15' => ['BK06'],
+            'MK16' => ['BK07'],
+            'MK17' => ['BK07'],
+            'MK18' => ['BK08'],
+            'MK19' => ['BK08'],
+            'MK20' => ['BK09'],
+            'MK21' => ['BK09'],
+            'MK22' => ['BK12'],
+            'MK23' => ['BK11'],
+            'MK24' => ['BK10', 'BK12'],
+            'MK25' => ['BK10', 'BK12'],
         ];
 
         $rows = [];
@@ -403,28 +425,65 @@ class CurriculumDataSeeder extends Seeder
         DB::table('pivot_mk_bk')->upsert($rows, ['id_mk', 'id_bk']);
     }
 
+    // ── PIVOT MK ↔ CPL (Buku Tabel 7) ─────────────────────────────────────────
+    private function seedPivotMkCpl(array $mk, array $cpl): void
+    {
+        // MK → [CPL yang dipenuhi]
+        $matrix = [
+            'MK01' => ['CPL01'],
+            'MK02' => ['CPL01'],
+            'MK03' => ['CPL02'],
+            'MK04' => ['CPL02'],
+            'MK05' => ['CPL04'],
+            'MK06' => ['CPL04'],
+            'MK07' => ['CPL04'],
+            'MK08' => ['CPL07'],
+            'MK09' => ['CPL01', 'CPL06', 'CPL07'],
+            'MK10' => ['CPL03', 'CPL06'],
+            'MK11' => ['CPL03'],
+            'MK12' => ['CPL06'],
+            'MK13' => ['CPL06'],
+            'MK14' => ['CPL03'],
+            'MK15' => ['CPL06', 'CPL07'],
+            'MK16' => ['CPL03'],
+            'MK17' => ['CPL03'],
+            'MK18' => ['CPL04'],
+            'MK19' => ['CPL04'],
+            'MK20' => ['CPL05'],
+            'MK21' => ['CPL05'],
+            'MK22' => ['CPL07'],
+            'MK23' => ['CPL02'],
+            'MK24' => ['CPL03', 'CPL07'],
+            'MK25' => ['CPL03', 'CPL07'],
+        ];
+
+        $rows = [];
+        foreach ($matrix as $mkKode => $cplKodes) {
+            if (!isset($mk[$mkKode])) continue;
+            foreach ($cplKodes as $cplKode) {
+                if (!isset($cpl[$cplKode])) continue;
+                $rows[] = [
+                    'id_mk'   => $mk[$mkKode]->id,
+                    'id_cpl'  => $cpl[$cplKode]->id,
+                    'id_cpmk' => null,
+                    'bobot'   => 1.00,
+                ];
+            }
+        }
+        DB::table('pivot_mk_cpl')->upsert($rows, ['id_mk', 'id_cpl']);
+    }
+
     // ── PIVOT CPL SN-DIKTI ↔ CPL PRODI ───────────────────────────────────────
     private function seedPivotCplsnCplp(array $cplProdi): void
     {
-        // Pemetaan rumpun CPL SN-DIKTI → CPL Prodi
-        // CPL01-04, 06-09: Keterampilan Khusus & Pengetahuan
-        // CPL05, 10-11: Sikap (S01-S11)
-        // CPL12-14: Keterampilan Umum (KU01-KU10)
         $mapping = [
-            'CPL01' => ['CPL-P01', 'CPL-KK03'],
+            'CPL01' => ['CPL-P01'],
             'CPL02' => ['CPL-KK01', 'CPL-P02'],
-            'CPL03' => ['CPL-KK03'],
+            'CPL03' => ['CPL-KK03', 'CPL-P02'],
             'CPL04' => ['CPL-KK02'],
             'CPL05' => ['CPL-KK05', 'CPL-S08'],
             'CPL06' => ['CPL-P03'],
             'CPL07' => ['CPL-KK01'],
-            'CPL08' => ['CPL-P03'],
-            'CPL09' => ['CPL-S10'],
-            'CPL10' => ['CPL-S01', 'CPL-S02', 'CPL-S03', 'CPL-S04', 'CPL-S06', 'CPL-S07'],
-            'CPL11' => ['CPL-S05', 'CPL-S09', 'CPL-S10', 'CPL-S11'],
-            'CPL12' => ['CPL-KU01', 'CPL-KU03'],
-            'CPL13' => ['CPL-KU04', 'CPL-KU09', 'CPL-KU10'],
-            'CPL14' => ['CPL-KU02', 'CPL-KU05', 'CPL-KU07', 'CPL-KU08'],
         ];
 
         $rows = [];

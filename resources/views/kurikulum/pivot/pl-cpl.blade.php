@@ -65,35 +65,42 @@
     <span class="text-gray-400">· Hover kode untuk deskripsi</span>
 </div>
 
+{{-- Validation warning --}}
+<div id="mapping-warning" class="hidden mb-3 bg-amber-50 border border-amber-300 rounded-xl px-4 py-3 text-sm text-amber-800 flex items-start gap-2">
+    <svg class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    <span id="mapping-warning-text"></span>
+</div>
+
+@include('layouts._search', ['target'=>'pl-cpl-table-wrap','placeholder'=>'Cari PL atau CPL...','mode'=>'dim','rowSelector'=>'tbody tr'])
 <div>
-    <div class="rounded-xl border border-amber-200 shadow-sm overflow-hidden">
+    <div id="pl-cpl-table-wrap" class="rounded-xl border border-amber-200 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="border-collapse">
+            <table id="pl-cpl-table" class="border-collapse">
                 <thead>
                     <tr>
                         <th style="background:#F59E0B;min-width:120px" class="px-4 py-3 text-left text-xs font-bold text-white border border-amber-400 sticky left-0 z-20">
-                            CPL Prodi \ PL
+                            PL \ CPL Prodi
                         </th>
-                        @foreach ($plList as $pl)
+                        @foreach ($cplList as $cpl)
                             <th style="background:#F59E0B;min-width:72px" class="px-2 py-3 text-center text-xs font-bold text-white border border-amber-400">
                                 <span class="font-mono cursor-help block"
-                                      data-tooltip="{{ $pl->kode_pl }}: {{ $pl->deskripsi ?? '' }}"
-                                      data-tip-label="Profil Lulusan">{{ $pl->kode_pl }}</span>
+                                      data-tooltip="{{ $cpl->kode_cpl }}: {{ $cpl->deskripsi ?? '' }}"
+                                      data-tip-label="CPL Prodi">{{ $cpl->kode_cpl }}</span>
                             </th>
                         @endforeach
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($cplList as $cpl)
+                    @foreach ($plList as $pl)
                         @php $rowBg = $loop->even ? '#fffbeb' : '#fff'; @endphp
                         <tr style="background:{{ $rowBg }}">
                             <td style="min-width:120px;background:{{ $loop->even ? '#fef3c7' : '#fffbeb' }}"
                                 class="px-4 py-2.5 border border-amber-200 sticky left-0 z-10">
-                                <span class="font-mono font-bold text-violet-800 text-xs cursor-help"
-                                      data-tooltip="{{ $cpl->kode_cpl }}: {{ $cpl->deskripsi ?? '' }}"
-                                      data-tip-label="CPL Prodi">{{ $cpl->kode_cpl }}</span>
+                                <span class="font-mono font-bold text-amber-800 text-xs cursor-help"
+                                      data-tooltip="{{ $pl->kode_pl }}: {{ $pl->deskripsi ?? '' }}"
+                                      data-tip-label="Profil Lulusan">{{ $pl->kode_pl }}</span>
                             </td>
-                            @foreach ($plList as $pl)
+                            @foreach ($cplList as $cpl)
                                 @php $checked = in_array($cpl->id, $existing[$pl->id] ?? []); @endphp
                                 <td class="border border-amber-100 text-center align-middle pivot-cell {{ $checked ? 'is-checked' : '' }}"
                                     style="min-width:72px;height:42px"
@@ -134,6 +141,40 @@
     function refresh() { if (info) info.textContent = document.querySelectorAll('.pivot-cb:checked').length + ' relasi aktif'; }
     document.querySelectorAll('.pivot-cell').forEach(c => c.addEventListener('click', () => setTimeout(refresh, 0)));
     refresh();
+})();
+</script>
+<script>
+// Warning: PL rows yang semua unchecked (PL tidak dipetakan ke satu CPL pun)
+(function () {
+    var warning  = document.getElementById('mapping-warning');
+    var warnText = document.getElementById('mapping-warning-text');
+    if (!warning) return;
+
+    function checkWarning() {
+        var table  = document.querySelector('table');
+        if (!table) return;
+        var rows   = table.querySelectorAll('tbody tr');
+        var unchecked = [];
+        rows.forEach(function (row) {
+            var cbs = row.querySelectorAll('.pivot-cb:not(:disabled)');
+            if (cbs.length === 0) return;
+            var anyChecked = Array.from(cbs).some(function (cb) { return cb.checked; });
+            if (!anyChecked) {
+                var label = row.querySelector('td:first-child span') || row.querySelector('td:first-child');
+                unchecked.push(label ? label.textContent.trim() : '?');
+            }
+        });
+        if (unchecked.length > 0) {
+            warnText.textContent = unchecked.length + ' PL belum dipetakan ke CPL manapun: ' + unchecked.join(', ');
+            warning.classList.remove('hidden');
+        } else {
+            warning.classList.add('hidden');
+        }
+    }
+    document.querySelectorAll('.pivot-cb').forEach(function (cb) {
+        cb.addEventListener('change', checkWarning);
+    });
+    checkWarning();
 })();
 </script>
 @endpush

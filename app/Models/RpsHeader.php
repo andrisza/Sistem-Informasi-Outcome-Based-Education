@@ -19,6 +19,12 @@ class RpsHeader extends Model
         'id_kaprodi_pengesah',
         'tanggal_penyusunan',
         'kode_dokumen',
+        'nama_perguruan_tinggi',
+        'nama_fakultas',
+        'deskripsi_mk',
+        'materi_pembelajaran',
+        'pustaka_utama',
+        'pustaka_pendukung',
         'status',
         'disahkan_pada',
     ];

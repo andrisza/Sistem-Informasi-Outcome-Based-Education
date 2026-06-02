@@ -34,16 +34,18 @@
     <span class="ml-auto shrink-0 font-semibold">{{ $bkList->count() }} BK terdaftar</span>
 </div>
 
-<div class="rounded-xl border border-amber-200 shadow-sm overflow-hidden">
+@include('layouts._search', ['target'=>'bk-table-wrap','placeholder'=>'Cari BK (kode, nama, deskripsi)...','mode'=>'hide','rowSelector'=>'tbody tr'])
+<div id="bk-table-wrap" class="rounded-xl border border-amber-200 shadow-sm overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full text-sm border-collapse">
             <thead>
                 <tr style="background:#F59E0B">
                     <th class="px-3 py-3 text-center text-xs font-bold text-white border border-amber-300 w-10">No</th>
                     <th class="px-4 py-3 text-center text-xs font-bold text-white border border-amber-300 w-24">Kode BK</th>
-                    <th class="px-4 py-3 text-left text-xs font-bold text-white border border-amber-300">Bahan Kajian</th>
-                    <th class="px-4 py-3 text-center text-xs font-bold text-white border border-amber-300 w-16">CPL</th>
-                    <th class="px-4 py-3 text-center text-xs font-bold text-white border border-amber-300 w-16">MK</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-white border border-amber-300 w-40">Bahan Kajian</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-white border border-amber-300">Deskripsi</th>
+                    <th class="px-4 py-3 text-center text-xs font-bold text-white border border-amber-300 w-28">Kompetensi</th>
+                    <th class="px-4 py-3 text-left text-xs font-bold text-white border border-amber-300 w-28">Referensi</th>
                     @if (!$kurikulum->isArsip())
                         <th class="px-3 py-3 text-center text-xs font-bold text-white border border-amber-300 w-20">Aksi</th>
                     @endif
@@ -61,24 +63,28 @@
                                   data-tooltip="{{ $bk->kode_bk }}: {{ $bk->nama_bk }}{{ $bk->deskripsi ? ' — '.$bk->deskripsi : '' }}">{{ $bk->kode_bk }}</span>
                         </td>
                         <td class="px-4 py-3 border border-amber-100">
-                            <p class="font-medium text-gray-800 text-sm">{{ $bk->nama_bk }}</p>
-                            @if ($bk->deskripsi)
-                                <p class="text-gray-400 text-xs mt-0.5 leading-snug">{{ Str::limit($bk->deskripsi, 100) }}</p>
-                            @endif
+                            <p class="font-medium italic text-gray-800 text-sm leading-snug">{{ $bk->nama_bk }}</p>
+                        </td>
+                        <td class="px-4 py-3 border border-amber-100 text-xs text-gray-600 leading-relaxed">
+                            {{ $bk->deskripsi ?? '—' }}
                         </td>
                         <td class="px-4 py-3 text-center border border-amber-100">
-                            @if ($bk->cpl_prodi_count > 0)
-                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-violet-100 text-violet-800 text-xs font-bold">{{ $bk->cpl_prodi_count }}</span>
+                            @php
+                                $kompCls = match($bk->kompetensi ?? '') {
+                                    'Utama'     => 'bg-blue-100 text-blue-800',
+                                    'Pendukung' => 'bg-amber-100 text-amber-800',
+                                    'Umum'      => 'bg-gray-100 text-gray-700',
+                                    default     => 'bg-gray-50 text-gray-400',
+                                };
+                            @endphp
+                            @if ($bk->kompetensi)
+                                <span class="inline-flex px-2 py-0.5 rounded text-xs font-medium {{ $kompCls }}">{{ $bk->kompetensi }}</span>
                             @else
-                                <span class="text-gray-300 text-xs">0</span>
+                                <span class="text-gray-300 text-xs">—</span>
                             @endif
                         </td>
-                        <td class="px-4 py-3 text-center border border-amber-100">
-                            @if ($bk->mata_kuliah_count > 0)
-                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-800 text-xs font-bold">{{ $bk->mata_kuliah_count }}</span>
-                            @else
-                                <span class="text-gray-300 text-xs">0</span>
-                            @endif
+                        <td class="px-4 py-3 border border-amber-100 text-xs text-gray-500">
+                            {{ $bk->referensi ?? '—' }}
                         </td>
                         @if (!$kurikulum->isArsip())
                             <td class="px-3 py-3 border border-amber-100">
@@ -104,7 +110,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $kurikulum->isArsip() ? 5 : 6 }}" class="px-5 py-14 text-center text-sm text-gray-400 bg-amber-50/30">
+                        <td colspan="{{ $kurikulum->isArsip() ? 6 : 7 }}" class="px-5 py-14 text-center text-sm text-gray-400 bg-amber-50/30">
                             <div class="flex flex-col items-center gap-2">
                                 <svg class="w-10 h-10 text-amber-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>

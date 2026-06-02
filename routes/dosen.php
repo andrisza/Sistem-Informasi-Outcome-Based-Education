@@ -24,8 +24,11 @@ Route::get('/pengampuan', [DashboardController::class, 'pengampuan'])->name('pen
 // PUT    /dosen/rps/{rps}        →  dosen.rps.update
 // DELETE /dosen/rps/{rps}        →  dosen.rps.destroy
 // POST   /dosen/rps/{rps}/submit →  dosen.rps.submit  (ajukan ke kaprodi)
-Route::resource('rps', RpsController::class);
+// Parameter name dipaksa jadi {rps} agar cocok dengan $rps di controller.
+// Tanpa ini, Laravel mengsingularkan "rps" → "rp" sehingga model binding gagal.
+Route::resource('rps', RpsController::class)->parameters(['rps' => 'rps']);
 Route::post('/rps/{rps}/submit', [RpsController::class, 'submit'])->name('rps.submit');
+Route::get('/rps/{rps}/print',   [RpsController::class, 'print'])->name('rps.print');
 
 // ── Pertemuan RPS ─────────────────────────────────────────────────────────────
 // GET  /dosen/rps/{rps}/pertemuan          →  dosen.rps.pertemuan.index

@@ -22,6 +22,7 @@ class Cpmk extends Model
         'kode_cpmk',
         'deskripsi',
         'urutan',
+        'level_bloom',
     ];
 
     public function mataKuliah(): BelongsTo
@@ -42,5 +43,10 @@ class Cpmk extends Model
     public function subCpmk(): HasMany
     {
         return $this->hasMany(SubCpmk::class, 'id_cpmk');
+    }
+
+    public function penilaian(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(CpmkPenilaian::class, 'id_cpmk');
     }
 }

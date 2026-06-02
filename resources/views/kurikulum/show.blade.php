@@ -10,29 +10,77 @@
 @endsection
 
 @section('header-actions')
+    {{-- Tombol Edit: tampil jika belum arsip --}}
     @if (!$kurikulum->isArsip())
         <a href="{{ route('kurikulum.edit', $kurikulum) }}"
            class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
             Edit
         </a>
     @endif
+
     @if (auth()->user()->isKaprodi())
-        @if ($kurikulum->status !== 'arsip')
-            <form method="POST" action="{{ route('kurikulum.arsip', $kurikulum) }}" class="inline"
-                  onsubmit="return confirm('Arsipkan kurikulum ini?')">
-                @csrf
-                <button type="submit" class="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-                    Arsipkan
-                </button>
-            </form>
-        @else
+        @if ($kurikulum->isDraft())
+            {{-- Draft → tampilkan tombol Aktifkan --}}
             <form method="POST" action="{{ route('kurikulum.aktifkan', $kurikulum) }}" class="inline"
-                  onsubmit="return confirm('Aktifkan kembali kurikulum ini?')">
+                  onsubmit="return confirm('Aktifkan kurikulum {{ $kurikulum->kode }}?\n\nKurikulum akan berlaku aktif dan dapat digunakan oleh Dosen dan Mahasiswa.')">
                 @csrf
-                <button type="submit" class="inline-flex items-center gap-2 bg-green-50 border border-green-200 hover:bg-green-100 text-green-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
                     Aktifkan
                 </button>
             </form>
+
+        @elseif ($kurikulum->isAktif())
+            {{-- Aktif → tampilkan tombol Arsipkan --}}
+            <form method="POST" action="{{ route('kurikulum.arsip', $kurikulum) }}" class="inline"
+                  onsubmit="return confirm('Arsipkan kurikulum {{ $kurikulum->kode }}?\n\nSetelah diarsipkan:\n• Semua data menjadi read-only\n• Tidak dapat diedit kembali kecuali diaktifkan ulang\n• Data tetap dapat dilihat dan dilaporkan')">
+                @csrf
+                <button type="submit"
+                        class="inline-flex items-center gap-2 bg-amber-50 border border-amber-200 hover:bg-amber-100 text-amber-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8"/>
+                    </svg>
+                    Arsipkan
+                </button>
+            </form>
+
+        @elseif ($kurikulum->isArsip())
+            {{-- Arsip → tampilkan tombol Aktifkan Kembali --}}
+            <form method="POST" action="{{ route('kurikulum.aktifkan', $kurikulum) }}" class="inline"
+                  onsubmit="return confirm('Aktifkan kembali kurikulum {{ $kurikulum->kode }}?\n\nKurikulum akan dapat diedit kembali.')">
+                @csrf
+                <button type="submit"
+                        class="inline-flex items-center gap-2 bg-green-50 border border-green-200 hover:bg-green-100 text-green-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                    Aktifkan Kembali
+                </button>
+            </form>
+        @endif
+
+    @else
+        {{-- Tim Kurikulum: tampilkan info status saja, tanpa tombol aksi status --}}
+        @if ($kurikulum->isDraft())
+            <span class="inline-flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                Menunggu aktivasi oleh Kaprodi
+            </span>
+        @elseif ($kurikulum->isArsip())
+            <span class="inline-flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 border border-gray-200 px-3 py-2 rounded-lg">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                </svg>
+                Kurikulum telah diarsipkan — read-only
+            </span>
         @endif
     @endif
 @endsection

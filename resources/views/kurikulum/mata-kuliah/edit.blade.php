@@ -23,13 +23,6 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Kode MK <span class="text-red-500">*</span></label>
-                    <input type="text" name="kode_mk" value="{{ old('kode_mk', $mataKuliah->kode_mk) }}"
-                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('kode_mk') border-red-400 @enderror"
-                           placeholder="cth: SI101">
-                    @error('kode_mk') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
-                <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">Semester <span class="text-red-500">*</span></label>
                     <select name="semester"
                             class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('semester') border-red-400 @enderror">
@@ -69,6 +62,10 @@
                         @foreach ($kategoriOptions as $kat)
                             <option value="{{ $kat }}" {{ old('kategori_mk', $mataKuliah->kategori_mk) == $kat ? 'selected' : '' }}>{{ $kat }}</option>
                         @endforeach
+                        {{-- If existing value is not in the list, show it anyway --}}
+                        @if ($mataKuliah->kategori_mk && !$kategoriOptions->contains($mataKuliah->kategori_mk))
+                            <option value="{{ $mataKuliah->kategori_mk }}" selected>{{ $mataKuliah->kategori_mk }}</option>
+                        @endif
                     </select>
                     @error('kategori_mk') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                 </div>
@@ -76,6 +73,23 @@
 
             <div class="rounded-lg bg-gray-50 px-4 py-3 text-xs text-gray-500">
                 SKS Total = SKS Teori + SKS Praktikum (dihitung otomatis oleh sistem)
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Kompetensi MK</label>
+                <select name="kompetensi_mk"
+                        class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="Utama"     {{ old('kompetensi_mk', $mataKuliah->kompetensi_mk ?? 'Utama') === 'Utama'     ? 'selected' : '' }}>Utama</option>
+                    <option value="Pendukung" {{ old('kompetensi_mk', $mataKuliah->kompetensi_mk) === 'Pendukung' ? 'selected' : '' }}>Pendukung</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1">Kode Prasyarat</label>
+                <input type="text" name="kode_prasyarat" value="{{ old('kode_prasyarat', $mataKuliah->kode_prasyarat) }}"
+                       class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('kode_prasyarat') border-red-400 @enderror"
+                       placeholder="cth: MK05 (kosongkan jika tidak ada)">
+                @error('kode_prasyarat') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
             </div>
 
         </div>

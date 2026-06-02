@@ -20,10 +20,18 @@ class Pl extends Model
         'kode_pl',
         'deskripsi',
         'kategori',
+        'referensi',
         'ref_area_fungsi_1',
         'ref_area_fungsi_2',
         'ref_area_fungsi_3',
         'urutan',
+        'status',
+        'approved_by',
+        'approved_at',
+    ];
+
+    protected $casts = [
+        'approved_at' => 'datetime',
     ];
 
     public function kurikulum(): BelongsTo
@@ -34,5 +42,10 @@ class Pl extends Model
     public function cplProdi(): BelongsToMany
     {
         return $this->belongsToMany(CplProdi::class, 'pivot_pl_cpl', 'id_pl', 'id_cpl');
+    }
+
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 }

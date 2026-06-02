@@ -3,6 +3,7 @@
 use App\Http\Controllers\Kaprodi\ActivityLogController;
 use App\Http\Controllers\Kaprodi\CqiController;
 use App\Http\Controllers\Kaprodi\DashboardController;
+use App\Http\Controllers\Kaprodi\PengampuanMkController;
 use App\Http\Controllers\Kaprodi\ReportController;
 use App\Http\Controllers\Kaprodi\RpsApprovalController;
 use App\Http\Controllers\Kaprodi\SemesterAkademikController;
@@ -72,6 +73,37 @@ Route::prefix('reports')->name('reports.')->group(function () {
     Route::get('/ketercapaian', [ReportController::class, 'ketercapaian'])->name('ketercapaian');
 });
 
+// ── Pengampuan MK ─────────────────────────────────────────────────────────────
+// Kaprodi menugaskan Dosen ke MK per Semester agar Dosen bisa membuat RPS.
+// GET    /kaprodi/pengampuan             →  kaprodi.pengampuan.index
+// GET    /kaprodi/pengampuan/create      →  kaprodi.pengampuan.create  (satu dosen)
+// POST   /kaprodi/pengampuan             →  kaprodi.pengampuan.store
+// POST   /kaprodi/pengampuan/batch       →  kaprodi.pengampuan.store-batch (batch)
+// POST   /kaprodi/pengampuan/{p}/koord   →  kaprodi.pengampuan.toggle-koord
+// DELETE /kaprodi/pengampuan/{p}         →  kaprodi.pengampuan.destroy
+Route::prefix('pengampuan')->name('pengampuan.')->group(function () {
+    Route::get('/',             [PengampuanMkController::class, 'index'])->name('index');
+    Route::get('/create',       [PengampuanMkController::class, 'create'])->name('create');
+    Route::post('/',            [PengampuanMkController::class, 'store'])->name('store');
+    Route::post('/batch',       [PengampuanMkController::class, 'storeBatch'])->name('store-batch');
+    Route::post('/{pengampuan}/toggle-koord', [PengampuanMkController::class, 'toggleKoordinator'])->name('toggle-koord');
+    Route::delete('/{pengampuan}', [PengampuanMkController::class, 'destroy'])->name('destroy');
+});
+
 // ── Audit Trail ───────────────────────────────────────────────────────────────
 // GET  /kaprodi/activity-log  →  kaprodi.activity-log.index
 Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('activity-log.index');
+
+// ── Master Kategori ───────────────────────────────────────────────────────────
+// GET  /kaprodi/master-kategori               →  kaprodi.master-kategori.index
+// POST /kaprodi/master-kategori               →  kaprodi.master-kategori.store
+// PUT  /kaprodi/master-kategori/{masterKategori}          →  kaprodi.master-kategori.update
+// POST /kaprodi/master-kategori/{masterKategori}/toggle   →  kaprodi.master-kategori.toggle
+use App\Http\Controllers\Kaprodi\MasterKategoriController;
+
+Route::prefix('master-kategori')->name('master-kategori.')->group(function () {
+    Route::get('/', [MasterKategoriController::class, 'index'])->name('index');
+    Route::post('/', [MasterKategoriController::class, 'store'])->name('store');
+    Route::put('/{masterKategori}', [MasterKategoriController::class, 'update'])->name('update');
+    Route::post('/{masterKategori}/toggle', [MasterKategoriController::class, 'toggleAktif'])->name('toggle');
+});

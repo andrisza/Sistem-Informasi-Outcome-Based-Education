@@ -20,7 +20,10 @@ class BahanKajian extends Model
         'kode_bk',
         'nama_bk',
         'deskripsi',
+        'kompetensi',
+        'referensi',
         'urutan',
+        'bidang_keilmuan',
     ];
 
     public function kurikulum(): BelongsTo
