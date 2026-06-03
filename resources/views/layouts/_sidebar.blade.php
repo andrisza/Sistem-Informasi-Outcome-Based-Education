@@ -136,6 +136,8 @@
         ['label' => 'Semester Akademik', 'route' => 'kaprodi.semester-akademik.index', 'icon' => 'calendar'],
         // Pengampuan MK — prasyarat agar Dosen bisa membuat RPS
         ['label' => 'Pengampuan MK',     'route' => 'kaprodi.pengampuan.index',        'icon' => 'academic-cap'],
+        // Enrollment MK — daftarkan mahasiswa ke mata kuliah per semester
+        ['label' => 'Enrollment MK',     'route' => 'kaprodi.enrollment.index',        'icon' => 'user-group'],
         // openWhen: tetap terbuka di semua halaman kurikulum (termasuk sub-halaman spesifik)
         ['group' => 'Kurikulum & RPS', 'icon' => 'book-open', 'openWhen' => 'kurikulum.*', 'children' => [
             // href (bukan route) agar aturan "tanpa query = tidak aktif saat ada query" berlaku

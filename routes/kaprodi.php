@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Kaprodi\ActivityLogController;
+use App\Http\Controllers\Kaprodi\EnrollmentMkController;
 use App\Http\Controllers\Kaprodi\CqiController;
 use App\Http\Controllers\Kaprodi\DashboardController;
 use App\Http\Controllers\Kaprodi\PengampuanMkController;
@@ -88,6 +89,26 @@ Route::prefix('pengampuan')->name('pengampuan.')->group(function () {
     Route::post('/batch',       [PengampuanMkController::class, 'storeBatch'])->name('store-batch');
     Route::post('/{pengampuan}/toggle-koord', [PengampuanMkController::class, 'toggleKoordinator'])->name('toggle-koord');
     Route::delete('/{pengampuan}', [PengampuanMkController::class, 'destroy'])->name('destroy');
+});
+
+// ── Enrollment MK (Daftar Mahasiswa ke MK per Semester) ──────────────────────
+// GET    /kaprodi/enrollment                →  kaprodi.enrollment.index
+// GET    /kaprodi/enrollment/create         →  kaprodi.enrollment.create (satu mahasiswa)
+// POST   /kaprodi/enrollment                →  kaprodi.enrollment.store
+// GET    /kaprodi/enrollment/batch          →  kaprodi.enrollment.batch   (banyak mahasiswa)
+// POST   /kaprodi/enrollment/batch          →  kaprodi.enrollment.store-batch
+// GET    /kaprodi/enrollment/{e}/edit       →  kaprodi.enrollment.edit
+// PUT    /kaprodi/enrollment/{e}            →  kaprodi.enrollment.update
+// DELETE /kaprodi/enrollment/{e}            →  kaprodi.enrollment.destroy
+Route::prefix('enrollment')->name('enrollment.')->group(function () {
+    Route::get('/',              [EnrollmentMkController::class, 'index'])->name('index');
+    Route::get('/create',        [EnrollmentMkController::class, 'create'])->name('create');
+    Route::post('/',             [EnrollmentMkController::class, 'store'])->name('store');
+    Route::get('/batch',         [EnrollmentMkController::class, 'batchCreate'])->name('batch');
+    Route::post('/batch',        [EnrollmentMkController::class, 'storeBatch'])->name('store-batch');
+    Route::get('/{enrollment}/edit',  [EnrollmentMkController::class, 'edit'])->name('edit');
+    Route::put('/{enrollment}',       [EnrollmentMkController::class, 'update'])->name('update');
+    Route::delete('/{enrollment}',    [EnrollmentMkController::class, 'destroy'])->name('destroy');
 });
 
 // ── Audit Trail ───────────────────────────────────────────────────────────────

@@ -10,52 +10,61 @@
     $kId       = $latestKur?->id;
     $kode      = $latestKur?->kode ?? '—';
 
-    $mk = fn(string $label, string $url, string $group = 'Umum', string $keywords = '') =>
-        compact('label','url','group','keywords');
+    // Helper: buat item dengan URL aman — jika route tidak ada, hasilkan null (lalu difilter)
+    $mk = function(string $label, string $url, string $group = 'Umum', string $keywords = '') {
+        return compact('label', 'url', 'group', 'keywords');
+    };
+
+    // Helper URL aman — tangkap exception jika route belum terdaftar
+    $r = function(string $name, $params = []) {
+        try { return route($name, $params); } catch (\Throwable $e) { return ''; }
+    };
 
     $items = [];
 
     // ── KAPRODI ──────────────────────────────────────────────────────────────
     if ($role === 'kaprodi') {
         $items = [
-            $mk('Dashboard',              route('kaprodi.dashboard'),                       'Navigasi',      'home beranda'),
-            $mk('Semester Akademik',      route('kaprodi.semester-akademik.index'),         'Akademik',      'semester ganjil genap tahun ajaran akademik'),
-            $mk('Tambah Semester Baru',   route('kaprodi.semester-akademik.create'),        'Akademik',      'buat semester baru tambah'),
-            $mk('Pengampuan MK',          route('kaprodi.pengampuan.index'),                'Akademik',      'dosen mengajar mata kuliah'),
-            $mk('Semua Kurikulum',        route('kurikulum.index'),                         'Kurikulum',     'daftar list kurikulum'),
-            $mk('Arsip Kurikulum',        route('kurikulum.index',['status'=>'arsip']),     'Kurikulum',     'arsip kurikulum lama'),
-            $mk('Tambah Kurikulum',       route('kurikulum.create'),                        'Kurikulum',     'buat kurikulum baru'),
-            $mk('Persetujuan RPS',        route('kaprodi.rps-approval.index'),              'Kurikulum',     'rps approval review dosen'),
-            $mk('Evaluasi CQI',           route('kaprodi.cqi.index'),                       'Evaluasi',      'cqi continuous quality improvement'),
-            $mk('Laporan OBE',            route('kaprodi.reports.index'),                   'Evaluasi',      'laporan obe capaian cpl'),
-            $mk('Audit Trail',            route('kaprodi.activity-log.index'),              'Sistem',        'log aktivitas history'),
-            $mk('Manajemen User',         route('kaprodi.users.index'),                     'Sistem',        'pengguna akun dosen mahasiswa'),
-            $mk('Master Kategori',        route('admin.master-kategori.index'),             'Sistem',        'kategori cpl pl bk mk master'),
+            $mk('Dashboard',              $r('kaprodi.dashboard'),                              'Navigasi',  'home beranda'),
+            $mk('Semester Akademik',      $r('kaprodi.semester-akademik.index'),                'Akademik',  'semester ganjil genap'),
+            $mk('Tambah Semester Baru',   $r('kaprodi.semester-akademik.create'),               'Akademik',  'buat semester baru'),
+            $mk('Pengampuan MK',          $r('kaprodi.pengampuan.index'),                       'Akademik',  'dosen mengajar mata kuliah'),
+            $mk('Enrollment MK',          $r('kaprodi.enrollment.index'),                       'Akademik',  'mahasiswa daftar mata kuliah semester'),
+            $mk('Daftarkan Mahasiswa',    $r('kaprodi.enrollment.batch'),                       'Akademik',  'batch enrollment tambah mahasiswa mk'),
+            $mk('Semua Kurikulum',        $r('kurikulum.index'),                                'Kurikulum', 'daftar kurikulum'),
+            $mk('Arsip Kurikulum',        $r('kurikulum.index', ['status'=>'arsip']),           'Kurikulum', 'arsip kurikulum lama'),
+            $mk('Tambah Kurikulum',       $r('kurikulum.create'),                               'Kurikulum', 'buat kurikulum baru'),
+            $mk('Persetujuan RPS',        $r('kaprodi.rps-approval.index'),                     'Kurikulum', 'rps approval review dosen'),
+            $mk('Evaluasi CQI',           $r('kaprodi.cqi.index'),                              'Evaluasi',  'cqi continuous quality improvement'),
+            $mk('Laporan OBE',            $r('kaprodi.reports.index'),                          'Evaluasi',  'laporan obe capaian cpl'),
+            $mk('Audit Trail',            $r('kaprodi.activity-log.index'),                     'Sistem',    'log aktivitas history'),
+            $mk('Manajemen User',         $r('kaprodi.users.index'),                            'Sistem',    'pengguna akun dosen mahasiswa'),
+            $mk('Master Kategori',        $r('admin.master-kategori.index'),                    'Sistem',    'kategori cpl pl bk mk master'),
         ];
         if ($kId) {
             $items = array_merge($items, [
-                $mk("CPL SN-Dikti [$kode]",           route('kurikulum.cpl-sndikti.index',$kId),        'OBE Data',   'sindikti standar nasional'),
-                $mk("Profil Lulusan [$kode]",          route('kurikulum.pl.index',$kId),                 'OBE Data',   'pl profil lulusan'),
-                $mk("CPL Prodi [$kode]",               route('kurikulum.cpl-prodi.index',$kId),          'OBE Data',   'cpl capaian program'),
-                $mk("Bahan Kajian [$kode]",            route('kurikulum.bahan-kajian.index',$kId),       'OBE Data',   'bk bahan kajian'),
-                $mk("Mata Kuliah [$kode]",             route('kurikulum.mata-kuliah.index',$kId),        'OBE Data',   'mk daftar courses'),
-                $mk("Organisasi MK [$kode]",           route('kurikulum.organisasi-mk',$kId),            'OBE Data',   'distribusi semester'),
-                $mk("Matriks PL↔CPL [$kode]",          route('kurikulum.pivot.pl-cpl',$kId),             'Matriks',    'peta profil lulusan cpl'),
-                $mk("Matriks CPL-SN↔CPL [$kode]",     route('kurikulum.pivot.cplsn-cplp',$kId),         'Matriks',    'sindikti prodi mapping'),
-                $mk("Matriks CPL↔BK [$kode]",          route('kurikulum.pivot.cpl-bk',$kId),             'Matriks',    'cpl bahan kajian'),
-                $mk("Matriks MK↔BK [$kode]",           route('kurikulum.pivot.mk-bk',$kId),              'Matriks',    'mk bahan kajian'),
-                $mk("Matriks MK↔CPL [$kode]",          route('kurikulum.pivot.mk-cpl',$kId),             'Matriks',    'mk cpl cpmk auto'),
-                $mk("Matriks CPL↔CPMK [$kode]",        route('kurikulum.pivot.cpl-cpmk',$kId),           'Matriks',    'cpl cpmk bobot'),
-                $mk("Matriks CPL↔BK↔MK [$kode]",       route('kurikulum.pivot.cpl-bk-mk',$kId),          'Matriks',    '3d tiga dimensi'),
-                $mk("Peta CPL–CPMK–MK [$kode]",        route('kurikulum.overview.cpl-cpmk-mk',$kId),     'Matriks',    'tabel 13 pemetaan'),
-                $mk("Peta CPL–CPMK–Semester [$kode]",  route('kurikulum.penilaian.peta-semester',$kId),  'Asesmen',    'semester tabel peta'),
-                $mk("MK–CPMK–Sub-CPMK [$kode]",        route('kurikulum.penilaian.mk-cpmk-subcpmk',$kId),'Asesmen',   'edit subcpmk peta'),
-                $mk("Teknik Penilaian [$kode]",         route('kurikulum.penilaian.teknik',$kId),         'Asesmen',    'quiz uts uas observasi teknik'),
-                $mk("Tahap & Mekanisme [$kode]",        route('kurikulum.penilaian.tahap',$kId),          'Asesmen',    'tahap instrumen kriteria'),
-                $mk("Bobot Penilaian [$kode]",          route('kurikulum.penilaian.bobot',$kId),          'Asesmen',    'bobot persen nilai'),
-                $mk("Rumusan Nilai Akhir MK [$kode]",  route('kurikulum.penilaian.rumusan',$kId),        'Asesmen',    'skor maks total 100'),
-                $mk("Rumusan Nilai Akhir CPL [$kode]", route('kurikulum.penilaian.rumusan-cpl',$kId),    'Asesmen',    'lcpl nilai akhir cpl'),
-                $mk("Peta Pemenuhan CPL [$kode]",       route('kurikulum.overview.pemenuhan-cpl',$kId),   'Peta',       'ketercapaian fulfillment visual'),
+                $mk("CPL SN-Dikti [$kode]",          $r('kurikulum.cpl-sndikti.index', $kId),        'OBE Data',  'sindikti standar nasional'),
+                $mk("Profil Lulusan [$kode]",         $r('kurikulum.pl.index', $kId),                 'OBE Data',  'pl profil lulusan'),
+                $mk("CPL Prodi [$kode]",              $r('kurikulum.cpl-prodi.index', $kId),          'OBE Data',  'cpl capaian program'),
+                $mk("Bahan Kajian [$kode]",           $r('kurikulum.bahan-kajian.index', $kId),       'OBE Data',  'bk bahan kajian'),
+                $mk("Mata Kuliah [$kode]",            $r('kurikulum.mata-kuliah.index', $kId),        'OBE Data',  'mk daftar courses'),
+                $mk("Organisasi MK [$kode]",          $r('kurikulum.organisasi-mk', $kId),            'OBE Data',  'distribusi semester'),
+                $mk("Matriks PL↔CPL [$kode]",         $r('kurikulum.pivot.pl-cpl', $kId),             'Matriks',   'peta profil lulusan cpl'),
+                $mk("Matriks CPL-SN↔CPL [$kode]",    $r('kurikulum.pivot.cplsn-cplp', $kId),         'Matriks',   'sindikti prodi mapping'),
+                $mk("Matriks CPL↔BK [$kode]",         $r('kurikulum.pivot.cpl-bk', $kId),             'Matriks',   'cpl bahan kajian'),
+                $mk("Matriks MK↔BK [$kode]",          $r('kurikulum.pivot.mk-bk', $kId),              'Matriks',   'mk bahan kajian'),
+                $mk("Matriks MK↔CPL [$kode]",         $r('kurikulum.pivot.mk-cpl', $kId),             'Matriks',   'mk cpl cpmk auto'),
+                $mk("Matriks CPL↔CPMK [$kode]",       $r('kurikulum.pivot.cpl-cpmk', $kId),           'Matriks',   'cpl cpmk bobot'),
+                $mk("Matriks CPL↔BK↔MK [$kode]",      $r('kurikulum.pivot.cpl-bk-mk', $kId),          'Matriks',   '3d tiga dimensi'),
+                $mk("Peta CPL–CPMK–MK [$kode]",       $r('kurikulum.overview.cpl-cpmk-mk', $kId),     'Matriks',   'tabel 13 pemetaan'),
+                $mk("Peta CPL–CPMK–Semester [$kode]", $r('kurikulum.penilaian.peta-semester', $kId),  'Asesmen',   'semester tabel peta'),
+                $mk("MK–CPMK–Sub-CPMK [$kode]",       $r('kurikulum.penilaian.mk-cpmk-subcpmk', $kId),'Asesmen',  'edit subcpmk peta'),
+                $mk("Teknik Penilaian [$kode]",        $r('kurikulum.penilaian.teknik', $kId),         'Asesmen',   'quiz uts uas teknik'),
+                $mk("Tahap & Mekanisme [$kode]",       $r('kurikulum.penilaian.tahap', $kId),          'Asesmen',   'tahap instrumen kriteria'),
+                $mk("Bobot Penilaian [$kode]",         $r('kurikulum.penilaian.bobot', $kId),          'Asesmen',   'bobot persen nilai'),
+                $mk("Rumusan Nilai Akhir MK [$kode]",  $r('kurikulum.penilaian.rumusan', $kId),        'Asesmen',   'skor maks total 100'),
+                $mk("Rumusan Nilai Akhir CPL [$kode]", $r('kurikulum.penilaian.rumusan-cpl', $kId),    'Asesmen',   'lcpl nilai akhir cpl'),
+                $mk("Peta Pemenuhan CPL [$kode]",      $r('kurikulum.overview.pemenuhan-cpl', $kId),   'Peta',      'ketercapaian fulfillment visual'),
             ]);
         }
     }
@@ -63,42 +72,42 @@
     // ── TIM KURIKULUM ─────────────────────────────────────────────────────────
     elseif ($role === 'tim_kurikulum') {
         $items = [
-            $mk('Dashboard',              route('kurikulum.dashboard'),                     'Navigasi',   'home beranda'),
-            $mk('Semua Kurikulum',        route('kurikulum.index'),                         'Kurikulum',  'daftar kurikulum'),
-            $mk('Arsip Kurikulum',        route('kurikulum.index',['status'=>'arsip']),     'Kurikulum',  'arsip lama'),
-            $mk('Tambah Kurikulum',       route('kurikulum.create'),                        'Kurikulum',  'buat kurikulum baru'),
-            $mk('Master Kategori',        route('admin.master-kategori.index'),             'Sistem',     'kategori master'),
+            $mk('Dashboard',        $r('kurikulum.dashboard'),              'Navigasi',  'home beranda'),
+            $mk('Semua Kurikulum',  $r('kurikulum.index'),                  'Kurikulum', 'daftar kurikulum'),
+            $mk('Arsip Kurikulum',  $r('kurikulum.index',['status'=>'arsip']),'Kurikulum','arsip lama'),
+            $mk('Tambah Kurikulum', $r('kurikulum.create'),                 'Kurikulum', 'buat kurikulum baru'),
+            $mk('Master Kategori',  $r('admin.master-kategori.index'),      'Sistem',    'kategori master'),
         ];
         if ($kId) {
             $items = array_merge($items, [
-                $mk("Ikhtisar [$kode]",               route('kurikulum.show',$kId),                     'Kurikulum',  'ringkasan overview'),
-                $mk("CPL SN-Dikti [$kode]",           route('kurikulum.cpl-sndikti.index',$kId),        'OBE Data',   'sindikti standar nasional'),
-                $mk("Profil Lulusan [$kode]",          route('kurikulum.pl.index',$kId),                 'OBE Data',   'pl profil lulusan'),
-                $mk("CPL Prodi [$kode]",               route('kurikulum.cpl-prodi.index',$kId),          'OBE Data',   'cpl capaian'),
-                $mk("Bahan Kajian [$kode]",            route('kurikulum.bahan-kajian.index',$kId),       'OBE Data',   'bk bahan kajian'),
-                $mk("Mata Kuliah [$kode]",             route('kurikulum.mata-kuliah.index',$kId),        'OBE Data',   'mk courses daftar'),
-                $mk("Organisasi MK [$kode]",           route('kurikulum.organisasi-mk',$kId),            'OBE Data',   'distribusi semester'),
-                $mk("Matriks PL↔CPL [$kode]",          route('kurikulum.pivot.pl-cpl',$kId),             'Matriks',    'profil lulusan cpl'),
-                $mk("Matriks CPL-SN↔CPL [$kode]",     route('kurikulum.pivot.cplsn-cplp',$kId),         'Matriks',    'sindikti prodi'),
-                $mk("Matriks CPL↔BK [$kode]",          route('kurikulum.pivot.cpl-bk',$kId),             'Matriks',    'bahan kajian cpl'),
-                $mk("Matriks MK↔BK [$kode]",           route('kurikulum.pivot.mk-bk',$kId),              'Matriks',    'mk bk'),
-                $mk("Matriks MK↔CPL [$kode]",          route('kurikulum.pivot.mk-cpl',$kId),             'Matriks',    'mk cpl'),
-                $mk("Matriks CPL↔CPMK [$kode]",        route('kurikulum.pivot.cpl-cpmk',$kId),           'Matriks',    'cpmk'),
-                $mk("Matriks CPL↔BK↔MK [$kode]",       route('kurikulum.pivot.cpl-bk-mk',$kId),          'Matriks',    '3d'),
-                $mk("Peta CPL–CPMK–MK [$kode]",        route('kurikulum.overview.cpl-cpmk-mk',$kId),     'Matriks',    'tabel 13'),
-                $mk("Peta CPL–CPMK–Semester [$kode]",  route('kurikulum.penilaian.peta-semester',$kId),  'Asesmen',    'semester'),
-                $mk("MK–CPMK–Sub-CPMK [$kode]",        route('kurikulum.penilaian.mk-cpmk-subcpmk',$kId),'Asesmen',   'sub cpmk edit'),
-                $mk("Teknik Penilaian [$kode]",         route('kurikulum.penilaian.teknik',$kId),         'Asesmen',    'quiz uts uas'),
-                $mk("Tahap & Mekanisme [$kode]",        route('kurikulum.penilaian.tahap',$kId),          'Asesmen',    'instrumen kriteria'),
-                $mk("Bobot Penilaian [$kode]",          route('kurikulum.penilaian.bobot',$kId),          'Asesmen',    'bobot persen'),
-                $mk("Rumusan Nilai Akhir MK [$kode]",  route('kurikulum.penilaian.rumusan',$kId),        'Asesmen',    'skor maks'),
-                $mk("Rumusan Nilai Akhir CPL [$kode]", route('kurikulum.penilaian.rumusan-cpl',$kId),    'Asesmen',    'lcpl total'),
-                $mk("Peta Pemenuhan CPL [$kode]",       route('kurikulum.overview.pemenuhan-cpl',$kId),   'Peta',       'pemenuhan'),
-                $mk("Arsip Rapat [$kode]",              route('kurikulum.arsip-rapat.index',$kId),        'Administrasi','rapat notulen'),
-                $mk("Tim Kurikulum [$kode]",            route('kurikulum.tim.index',$kId),                'Administrasi','tim anggota'),
-                $mk("Periode [$kode]",                  route('kurikulum.periode.index',$kId),            'Administrasi','periode penyusunan'),
-                $mk("Lesson Learned [$kode]",           route('kurikulum.lesson-learned.index',$kId),     'Administrasi','evaluasi catatan'),
-                $mk("Checklist LEDIK [$kode]",          route('kurikulum.ledik.index',$kId),              'Administrasi','plan do check action'),
+                $mk("Ikhtisar [$kode]",              $r('kurikulum.show', $kId),                      'Kurikulum',   'ringkasan overview'),
+                $mk("CPL SN-Dikti [$kode]",          $r('kurikulum.cpl-sndikti.index', $kId),         'OBE Data',    'sindikti standar nasional'),
+                $mk("Profil Lulusan [$kode]",         $r('kurikulum.pl.index', $kId),                  'OBE Data',    'pl profil lulusan'),
+                $mk("CPL Prodi [$kode]",              $r('kurikulum.cpl-prodi.index', $kId),           'OBE Data',    'cpl capaian'),
+                $mk("Bahan Kajian [$kode]",           $r('kurikulum.bahan-kajian.index', $kId),        'OBE Data',    'bk bahan kajian'),
+                $mk("Mata Kuliah [$kode]",            $r('kurikulum.mata-kuliah.index', $kId),         'OBE Data',    'mk courses daftar'),
+                $mk("Organisasi MK [$kode]",          $r('kurikulum.organisasi-mk', $kId),             'OBE Data',    'distribusi semester'),
+                $mk("Matriks PL↔CPL [$kode]",         $r('kurikulum.pivot.pl-cpl', $kId),              'Matriks',     'profil lulusan cpl'),
+                $mk("Matriks CPL-SN↔CPL [$kode]",    $r('kurikulum.pivot.cplsn-cplp', $kId),          'Matriks',     'sindikti prodi'),
+                $mk("Matriks CPL↔BK [$kode]",         $r('kurikulum.pivot.cpl-bk', $kId),              'Matriks',     'bahan kajian cpl'),
+                $mk("Matriks MK↔BK [$kode]",          $r('kurikulum.pivot.mk-bk', $kId),               'Matriks',     'mk bk'),
+                $mk("Matriks MK↔CPL [$kode]",         $r('kurikulum.pivot.mk-cpl', $kId),              'Matriks',     'mk cpl'),
+                $mk("Matriks CPL↔CPMK [$kode]",       $r('kurikulum.pivot.cpl-cpmk', $kId),            'Matriks',     'cpmk'),
+                $mk("Matriks CPL↔BK↔MK [$kode]",      $r('kurikulum.pivot.cpl-bk-mk', $kId),           'Matriks',     '3d'),
+                $mk("Peta CPL–CPMK–MK [$kode]",       $r('kurikulum.overview.cpl-cpmk-mk', $kId),      'Matriks',     'tabel 13'),
+                $mk("Peta CPL–CPMK–Semester [$kode]", $r('kurikulum.penilaian.peta-semester', $kId),   'Asesmen',     'semester'),
+                $mk("MK–CPMK–Sub-CPMK [$kode]",       $r('kurikulum.penilaian.mk-cpmk-subcpmk', $kId),'Asesmen',     'sub cpmk edit'),
+                $mk("Teknik Penilaian [$kode]",        $r('kurikulum.penilaian.teknik', $kId),          'Asesmen',     'quiz uts uas'),
+                $mk("Tahap & Mekanisme [$kode]",       $r('kurikulum.penilaian.tahap', $kId),           'Asesmen',     'instrumen kriteria'),
+                $mk("Bobot Penilaian [$kode]",         $r('kurikulum.penilaian.bobot', $kId),           'Asesmen',     'bobot persen'),
+                $mk("Rumusan Nilai Akhir MK [$kode]",  $r('kurikulum.penilaian.rumusan', $kId),         'Asesmen',     'skor maks'),
+                $mk("Rumusan Nilai Akhir CPL [$kode]", $r('kurikulum.penilaian.rumusan-cpl', $kId),     'Asesmen',     'lcpl total'),
+                $mk("Peta Pemenuhan CPL [$kode]",      $r('kurikulum.overview.pemenuhan-cpl', $kId),    'Peta',        'pemenuhan'),
+                $mk("Arsip Rapat [$kode]",             $r('kurikulum.arsip-rapat.index', $kId),         'Administrasi','rapat notulen'),
+                $mk("Tim Kurikulum [$kode]",           $r('kurikulum.tim.index', $kId),                 'Administrasi','tim anggota'),
+                $mk("Periode [$kode]",                 $r('kurikulum.periode.index', $kId),             'Administrasi','periode penyusunan'),
+                $mk("Lesson Learned [$kode]",          $r('kurikulum.lesson-learned.index', $kId),      'Administrasi','evaluasi catatan'),
+                $mk("Checklist LEDIK [$kode]",         $r('kurikulum.ledik.index', $kId),               'Administrasi','plan do check action'),
             ]);
         }
     }
@@ -106,26 +115,28 @@
     // ── DOSEN ────────────────────────────────────────────────────────────────
     elseif ($role === 'dosen') {
         $items = [
-            $mk('Dashboard',              route('dosen.dashboard'),          'Navigasi',    'home beranda'),
-            $mk('Pengampuan MK Saya',     route('dosen.pengampuan'),         'Pembelajaran','mata kuliah diampu'),
-            $mk('RPS Saya',               route('dosen.rps.index'),          'Pembelajaran','rencana pembelajaran semester rps'),
-            $mk('Jurnal Mengajar',        route('dosen.jurnal.index'),       'Pembelajaran','jurnal log mengajar pertemuan'),
-            $mk('Input Nilai',            route('dosen.nilai.index'),        'Penilaian',   'nilai mahasiswa input assessment'),
-            $mk('Materi Ajar',            route('dosen.materi.index'),       'Penilaian',   'materi bahan ajar resources'),
+            $mk('Dashboard',          $r('dosen.dashboard'),      'Navigasi',    'home beranda'),
+            $mk('Pengampuan MK Saya', $r('dosen.pengampuan'),     'Pembelajaran','mata kuliah diampu'),
+            $mk('RPS Saya',           $r('dosen.rps.index'),      'Pembelajaran','rencana pembelajaran semester rps'),
+            $mk('Jurnal Mengajar',    $r('dosen.jurnal.index'),   'Pembelajaran','jurnal log mengajar pertemuan'),
+            $mk('Input Nilai',        $r('dosen.nilai.index'),    'Penilaian',   'nilai mahasiswa input assessment'),
+            $mk('Materi Ajar',        $r('dosen.materi.index'),   'Penilaian',   'materi bahan ajar resources'),
         ];
     }
 
     // ── MAHASISWA ─────────────────────────────────────────────────────────────
     elseif ($role === 'mahasiswa') {
         $items = [
-            $mk('Dashboard',              route('mahasiswa.dashboard'),              'Navigasi',  'home beranda'),
-            $mk('Nilai Saya',             route('mahasiswa.nilai.index'),            'Akademik',  'nilai assessment semester'),
-            $mk('Materi Kuliah',          route('mahasiswa.materi.index'),           'Akademik',  'bahan materi ajar'),
-            $mk('Progress CPL Saya',      route('mahasiswa.cpl-progress.index'),     'Akademik',  'capaian cpl progress ketercapaian'),
-            $mk('Ringkasan Kurikulum',    route('mahasiswa.kurikulum-ringkasan'),    'Akademik',  'kurikulum overview'),
-            $mk('Progress PL',            route('mahasiswa.pl-progress'),            'Akademik',  'profil lulusan progress'),
+            $mk('Dashboard',         $r('mahasiswa.dashboard'),          'Navigasi', 'home beranda'),
+            $mk('Nilai Saya',        $r('mahasiswa.nilai.index'),        'Akademik', 'nilai assessment semester'),
+            $mk('Materi Kuliah',     $r('mahasiswa.materi.index'),       'Akademik', 'bahan materi ajar'),
+            $mk('Progress CPL Saya', $r('mahasiswa.cpl-progress.index'), 'Akademik', 'capaian cpl progress ketercapaian'),
+            $mk('Progress PL',       $r('mahasiswa.pl-progress'),        'Akademik', 'profil lulusan progress'),
         ];
     }
+
+    // Pastikan semua URL valid — buang item yang URL-nya kosong/error
+    $items = array_values(array_filter($items, fn($i) => !empty($i['url'])));
 
     $itemsJson = json_encode($items, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP);
 @endphp
