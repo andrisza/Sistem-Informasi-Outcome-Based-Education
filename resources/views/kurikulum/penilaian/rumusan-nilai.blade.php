@@ -8,6 +8,11 @@
     <span class="mx-1 text-gray-300">/</span>
     <span class="text-gray-700 font-medium">Rumusan Nilai Akhir MK</span>
 @endsection
+
+@section('header-actions')
+    @include('layouts._export-button', ['route' => route('kurikulum.penilaian.rumusan.export', $kurikulum)])
+@endsection
+
 @section('content')
 
 @if (!$kurikulum->isArsip())

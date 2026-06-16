@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\BahanKajian;
 use App\Models\Kurikulum;
 use App\Models\MasterKategori;
+use App\Services\ExcelExportService;
 use App\Traits\GeneratesObeKode;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class BahanKajianController extends Controller
 {
@@ -98,6 +101,71 @@ class BahanKajianController extends Controller
         return redirect()
             ->route('kurikulum.bahan-kajian.index', $kurikulum)
             ->with('success', 'Bahan Kajian berhasil dihapus.');
+    }
+
+    public function export(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $bkList = $kurikulum->bahanKajian()->orderBy('urutan')->get();
+
+        $headerRow = [
+            ['label' => 'No', 'bg' => 'F59E0B'],
+            ['label' => 'Kode BK', 'bg' => 'F59E0B'],
+            ['label' => 'Nama BK', 'bg' => 'F59E0B'],
+            ['label' => 'Deskripsi', 'bg' => 'F59E0B'],
+            ['label' => 'Kompetensi', 'bg' => 'F59E0B'],
+            ['label' => 'Referensi', 'bg' => 'F59E0B'],
+            ['label' => 'Status', 'bg' => 'F59E0B'],
+        ];
+
+        $rows = $bkList->map(fn ($bk, $i) => [
+            $i + 1,
+            $bk->kode_bk,
+            $bk->nama_bk,
+            $bk->deskripsi,
+            $bk->kompetensi,
+            $bk->referensi,
+            ucfirst($bk->status ?? 'draft'),
+        ])->all();
+
+        return $excel->download("bahan-kajian-{$kurikulum->kode}.xlsx", [
+            'Bahan Kajian' => [
+                'headerRows' => [$headerRow],
+                'rows'       => $rows,
+                'colWidths'  => [5, 14, 30, 50, 14, 22, 12],
+            ],
+        ]);
+    }
+
+    public function approve(Kurikulum $kurikulum, BahanKajian $bahanKajian)
+    {
+        Gate::authorize('arsip-kurikulum');
+
+        $bahanKajian->update([
+            'status'      => 'approved',
+            'approved_by' => Auth::id(),
+            'approved_at' => now(),
+        ]);
+
+        return redirect()
+            ->route('kurikulum.bahan-kajian.index', $kurikulum)
+            ->with('success', "Bahan Kajian {$bahanKajian->kode_bk} berhasil disetujui.");
+    }
+
+    public function batchApprove(Request $request, Kurikulum $kurikulum)
+    {
+        Gate::authorize('arsip-kurikulum');
+
+        $ids = array_filter(array_map('intval', $request->input('ids', [])));
+        if (empty($ids)) {
+            return back()->with('error', 'Pilih setidaknya satu Bahan Kajian.');
+        }
+
+        $count = $kurikulum->bahanKajian()
+            ->whereIn('id', $ids)
+            ->where('status', 'draft')
+            ->update(['status' => 'approved', 'approved_by' => Auth::id(), 'approved_at' => now()]);
+
+        return back()->with('success', "$count Bahan Kajian berhasil disetujui.");
     }
 
     private function generateKodeBk(Kurikulum $kurikulum): string

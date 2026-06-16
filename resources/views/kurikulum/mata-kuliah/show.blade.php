@@ -37,41 +37,41 @@
                     <dt class="text-xs text-gray-500">Nama MK</dt>
                     <dd class="font-medium text-gray-800 mt-0.5">{{ $mataKuliah->nama_mk }}</dd>
                 </div>
-                <div class="grid grid-cols-3 gap-2">
-                    <div>
-                        <dt class="text-xs text-gray-500">SKS T</dt>
-                        <dd class="font-semibold text-gray-800 mt-0.5">{{ $mataKuliah->sks_teori }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs text-gray-500">SKS P</dt>
-                        <dd class="font-semibold text-gray-800 mt-0.5">{{ $mataKuliah->sks_praktikum }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-xs text-gray-500">Total</dt>
-                        <dd class="font-bold text-gray-900 mt-0.5">{{ $mataKuliah->sks_total }}</dd>
-                    </div>
+                <div>
+                    <dt class="text-xs text-gray-500">SKS</dt>
+                    <dd class="font-bold text-gray-900 mt-0.5">{{ $mataKuliah->sks_total }} SKS</dd>
                 </div>
                 <div>
                     <dt class="text-xs text-gray-500">Semester</dt>
                     <dd class="font-medium text-gray-800 mt-0.5">Semester {{ $mataKuliah->semester }}</dd>
                 </div>
                 <div>
-                    <dt class="text-xs text-gray-500">Kategori</dt>
+                    <dt class="text-xs text-gray-500">Kompetensi</dt>
                     <dd class="mt-0.5">
                         @php
-                            $katColor = match($mataKuliah->kategori_mk) {
-                                'Wajib'  => 'bg-blue-100 text-blue-700',
-                                'Pilihan'=> 'bg-violet-100 text-violet-700',
-                                'MKWK'   => 'bg-emerald-100 text-emerald-700',
-                                'MKDU'   => 'bg-amber-100 text-amber-700',
-                                default  => 'bg-gray-100 text-gray-600',
-                            };
+                            $kompColor = $mataKuliah->kompetensi_mk === 'Pendukung'
+                                ? 'bg-violet-100 text-violet-700'
+                                : 'bg-blue-100 text-blue-700';
                         @endphp
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $katColor }}">
-                            {{ $mataKuliah->kategori_mk }}
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $kompColor }}">
+                            {{ $mataKuliah->kompetensi_mk ?? 'Utama' }}
                         </span>
                     </dd>
                 </div>
+                @if ($mataKuliah->kategori_mk)
+                <div>
+                    <dt class="text-xs text-gray-500">Kategori</dt>
+                    <dd class="text-xs text-gray-500 mt-0.5">
+                        {{ $mataKuliah->kategori_mk }}
+                        <a href="{{ route('kurikulum.organisasi-mk', $kurikulum) }}"
+                           class="text-blue-500 hover:underline ml-1">(ubah di Organisasi MK)</a>
+                    </dd>
+                </div>
+                @else
+                <div class="rounded-lg bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                    Kategori MK belum dipetakan. <a href="{{ route('kurikulum.organisasi-mk', $kurikulum) }}" class="underline font-medium">Atur di Organisasi MK</a>
+                </div>
+                @endif
             </dl>
         </div>
     </div>

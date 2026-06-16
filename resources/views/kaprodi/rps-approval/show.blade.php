@@ -52,8 +52,20 @@
             </div>
             @if ($rps->mataKuliah)
             <div>
-                <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">SKS</dt>
-                <dd class="text-gray-800">{{ $rps->mataKuliah->sks_total ?? '—' }}</dd>
+                <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">SKS MK (saat ini)</dt>
+                <dd class="text-gray-800">{{ $rps->mataKuliah->sks_total ?? '—' }} SKS
+                    <span class="text-xs text-gray-400">(T={{ $rps->mataKuliah->sks_teori ?? 0 }} P={{ $rps->mataKuliah->sks_praktikum ?? 0 }})</span>
+                </dd>
+            </div>
+            @endif
+            @if ($rps->sks_teori !== null || $rps->sks_praktikum !== null)
+            <div>
+                <dt class="text-xs font-semibold text-amber-600 uppercase tracking-wider mb-0.5">SKS Diusulkan di RPS</dt>
+                <dd class="text-gray-800 font-semibold">
+                    {{ ($rps->sks_teori ?? 0) + ($rps->sks_praktikum ?? 0) }} SKS
+                    <span class="text-xs text-gray-500">(T={{ $rps->sks_teori ?? 0 }} P={{ $rps->sks_praktikum ?? 0 }})</span>
+                    <span class="ml-1 text-[11px] text-amber-600 font-medium">← akan diperbarui ke MK jika disahkan</span>
+                </dd>
             </div>
             @endif
             @if ($rps->disahkan_pada)

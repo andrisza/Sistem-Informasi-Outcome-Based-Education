@@ -7,6 +7,7 @@ use App\Models\ActivityLog;
 use App\Models\Kurikulum;
 use App\Models\MasterKategori;
 use App\Models\MataKuliah;
+use App\Services\ExcelExportService;
 use App\Traits\GeneratesObeKode;
 use Illuminate\Http\Request;
 
@@ -39,13 +40,16 @@ class MataKuliahController extends Controller
     {
         $validated = $request->validate([
             'kode_mk'        => 'nullable|string|max:50|unique:mata_kuliah,kode_mk,NULL,id,id_kurikulum,' . $kurikulum->id,
-            'nama_mk'        => 'required|string|max:255',
+            'nama_mk'        => 'required|string|max:255|unique:mata_kuliah,nama_mk,NULL,id,id_kurikulum,' . $kurikulum->id,
             'sks_teori'      => 'required|integer|min:0',
             'sks_praktikum'  => 'required|integer|min:0',
             'semester'       => 'required|integer|min:1|max:14',
             'kategori_mk'    => 'required|string|max:50',
             'kompetensi_mk'  => 'nullable|in:Utama,Pendukung',
             'kode_prasyarat' => 'nullable|string|max:20',
+        ], [
+            'nama_mk.unique' => 'Mata Kuliah dengan nama ini sudah ada dalam kurikulum yang sama.',
+            'kode_mk.unique' => 'Kode MK ini sudah digunakan dalam kurikulum yang sama.',
         ]);
 
         if (empty($validated['kode_mk'])) {
@@ -81,14 +85,13 @@ class MataKuliahController extends Controller
     public function update(Request $request, Kurikulum $kurikulum, MataKuliah $mataKuliah)
     {
         $validated = $request->validate([
-            'kode_mk'        => 'required|string|max:50',
-            'nama_mk'        => 'required|string|max:255',
-            'sks_teori'      => 'required|integer|min:0',
-            'sks_praktikum'  => 'required|integer|min:0',
-            'semester'       => 'required|integer|min:1|max:14',
-            'kategori_mk'    => 'required|string|max:50',
-            'kompetensi_mk'  => 'nullable|in:Utama,Pendukung',
-            'kode_prasyarat' => 'nullable|string|max:20',
+            'nama_mk'       => 'required|string|max:255|unique:mata_kuliah,nama_mk,' . $mataKuliah->id . ',id,id_kurikulum,' . $kurikulum->id,
+            'sks_teori'     => 'required|integer|min:0',
+            'sks_praktikum' => 'required|integer|min:0',
+            'semester'      => 'required|integer|min:1|max:14',
+            'kompetensi_mk' => 'nullable|in:Utama,Pendukung',
+        ], [
+            'nama_mk.unique' => 'Mata Kuliah dengan nama ini sudah ada dalam kurikulum yang sama.',
         ]);
 
         // sks_total is a MySQL generated column — must NOT be set explicitly
@@ -103,6 +106,50 @@ class MataKuliahController extends Controller
             ->with('success', 'Mata Kuliah berhasil diperbarui.');
     }
 
+    public function updateSemester(Request $request, Kurikulum $kurikulum, MataKuliah $mataKuliah)
+    {
+        abort_unless($mataKuliah->id_kurikulum === $kurikulum->id, 403);
+
+        $validated = $request->validate([
+            'semester' => 'required|integer|min:1|max:8',
+        ]);
+
+        $mataKuliah->update(['semester' => $validated['semester']]);
+
+        return response()->json(['success' => true, 'semester' => $validated['semester']]);
+    }
+
+    public function updateKategori(Request $request, Kurikulum $kurikulum, MataKuliah $mataKuliah)
+    {
+        abort_unless($mataKuliah->id_kurikulum === $kurikulum->id, 403);
+
+        $validated = $request->validate([
+            'kategori_mk' => 'nullable|string|in:Wajib,Pilihan,MKWK,MKDU',
+        ]);
+
+        $mataKuliah->update(['kategori_mk' => $validated['kategori_mk'] ?? null]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function batchUpdateKategori(Request $request, Kurikulum $kurikulum)
+    {
+        $validated = $request->validate([
+            'kategori'   => 'required|array',
+            'kategori.*' => 'nullable|string|in:Wajib,Pilihan,MKWK,MKDU',
+        ]);
+
+        foreach ($validated['kategori'] as $mkId => $kategori) {
+            MataKuliah::where('id', $mkId)
+                ->where('id_kurikulum', $kurikulum->id)
+                ->update(['kategori_mk' => $kategori ?: null]);
+        }
+
+        return redirect()
+            ->route('kurikulum.organisasi-mk', $kurikulum)
+            ->with('success', 'Pemetaan kategori MK berhasil disimpan.');
+    }
+
     public function destroy(Kurikulum $kurikulum, MataKuliah $mataKuliah)
     {
         $old = $mataKuliah->only(['kode_mk', 'nama_mk', 'semester']);
@@ -115,6 +162,42 @@ class MataKuliahController extends Controller
         return redirect()
             ->route('kurikulum.mata-kuliah.index', $kurikulum)
             ->with('success', 'Mata Kuliah berhasil dihapus.');
+    }
+
+    public function export(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $mkList = $kurikulum->mataKuliah()
+            ->orderBy('semester')
+            ->orderBy('kode_mk')
+            ->get();
+
+        $headerRow = [
+            ['label' => 'No', 'bg' => 'F59E0B'],
+            ['label' => 'Kode MK', 'bg' => 'F59E0B'],
+            ['label' => 'Nama MK', 'bg' => 'F59E0B'],
+            ['label' => 'Semester', 'bg' => 'F59E0B'],
+            ['label' => 'SKS Teori', 'bg' => 'F59E0B'],
+            ['label' => 'SKS Praktikum', 'bg' => 'F59E0B'],
+            ['label' => 'Kompetensi', 'bg' => 'F59E0B'],
+        ];
+
+        $rows = $mkList->map(fn ($mk, $i) => [
+            $i + 1,
+            $mk->kode_mk,
+            $mk->nama_mk,
+            $mk->semester,
+            $mk->sks_teori,
+            $mk->sks_praktikum,
+            $mk->kompetensi_mk,
+        ])->all();
+
+        return $excel->download("mata-kuliah-{$kurikulum->kode}.xlsx", [
+            'Mata Kuliah' => [
+                'headerRows' => [$headerRow],
+                'rows'       => $rows,
+                'colWidths'  => [5, 14, 50, 12, 12, 14, 14],
+            ],
+        ]);
     }
 
     private function generateKodeMk(Kurikulum $kurikulum): string

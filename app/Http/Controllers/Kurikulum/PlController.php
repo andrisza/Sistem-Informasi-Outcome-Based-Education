@@ -5,14 +5,11 @@ namespace App\Http\Controllers\Kurikulum;
 use App\Http\Controllers\Controller;
 use App\Models\Kurikulum;
 use App\Models\MasterKategori;
-use App\Models\PeriodeKurikulum;
 use App\Models\Pl;
-use App\Models\TimKurikulum;
-use App\Services\NotifikasiService;
+use App\Services\ExcelExportService;
 use App\Traits\GeneratesObeKode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
 class PlController extends Controller
@@ -112,26 +109,57 @@ class PlController extends Controller
             'approved_at' => now(),
         ]);
 
-        // Notifikasi ke anggota tim kurikulum (via periode kurikulum)
-        $periodeIds = PeriodeKurikulum::where('id_kurikulum', $kurikulum->id)->pluck('id');
-        $timIds = TimKurikulum::whereIn('id_periode', $periodeIds)
-            ->pluck('id_user')
-            ->unique()
-            ->toArray();
-
-        if (!empty($timIds)) {
-            NotifikasiService::kirim(
-                $timIds,
-                'Profil Lulusan Disetujui',
-                "PL {$pl->kode_pl} pada kurikulum {$kurikulum->kode} telah disetujui oleh Kaprodi.",
-                route('kurikulum.pl.index', $kurikulum),
-                'success'
-            );
-        }
-
         return redirect()
             ->route('kurikulum.pl.index', $kurikulum)
             ->with('success', "PL {$pl->kode_pl} berhasil disetujui.");
+    }
+
+    public function batchApprove(Request $request, Kurikulum $kurikulum)
+    {
+        Gate::authorize('arsip-kurikulum');
+
+        $ids = array_filter(array_map('intval', $request->input('ids', [])));
+        if (empty($ids)) {
+            return back()->with('error', 'Pilih setidaknya satu PL.');
+        }
+
+        $count = $kurikulum->pl()
+            ->whereIn('id', $ids)
+            ->where('status', 'draft')
+            ->update(['status' => 'approved', 'approved_by' => Auth::id(), 'approved_at' => now()]);
+
+        return back()->with('success', "$count PL berhasil disetujui.");
+    }
+
+    public function export(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $plList = $kurikulum->pl()->orderBy('urutan')->get();
+
+        $headerRow = [
+            ['label' => 'No', 'bg' => 'F59E0B'],
+            ['label' => 'Kode PL', 'bg' => 'F59E0B'],
+            ['label' => 'Profil Lulusan (PL)', 'bg' => 'F59E0B'],
+            ['label' => 'Kategori', 'bg' => 'F59E0B'],
+            ['label' => 'Referensi', 'bg' => 'F59E0B'],
+            ['label' => 'Status', 'bg' => 'F59E0B'],
+        ];
+
+        $rows = $plList->map(fn ($pl, $i) => [
+            $i + 1,
+            $pl->kode_pl,
+            $pl->deskripsi,
+            $pl->kategori,
+            $pl->referensi,
+            ucfirst($pl->status ?? 'draft'),
+        ])->all();
+
+        return $excel->download("profil-lulusan-{$kurikulum->kode}.xlsx", [
+            'Profil Lulusan' => [
+                'headerRows' => [$headerRow],
+                'rows'       => $rows,
+                'colWidths'  => [5, 14, 60, 22, 30, 12],
+            ],
+        ]);
     }
 
     private function generateKodePl(Kurikulum $kurikulum): string

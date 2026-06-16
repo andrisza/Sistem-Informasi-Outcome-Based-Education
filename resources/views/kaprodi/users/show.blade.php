@@ -80,6 +80,10 @@
                 <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Tahun Masuk</dt>
                 <dd class="text-gray-800">{{ $user->tahun_masuk ?? '—' }}</dd>
             </div>
+            <div>
+                <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Kelas</dt>
+                <dd class="text-gray-800">{{ $user->kelas ?? '—' }}</dd>
+            </div>
             @endif
             <div>
                 <dt class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Login Terakhir</dt>

@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Cpmk;
 use App\Models\CpmkPenilaian;
 use App\Models\Kurikulum;
+use App\Services\ExcelExportService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class PenilaianController extends Controller
 {
@@ -47,6 +49,60 @@ class PenilaianController extends Controller
         $cplList = $kurikulum->cplProdi()->orderBy('urutan')->get();
 
         return view('kurikulum.penilaian.mk-cpmk-subcpmk', compact('kurikulum', 'mkList', 'cplList'));
+    }
+
+    public function exportMkCpmkSubcpmk(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $mkList = $kurikulum->mataKuliah()
+            ->with(['cpmk' => fn ($q) => $q->with([
+                'cplProdi',
+                'subCpmk' => fn ($q2) => $q2->orderBy('urutan'),
+            ])->orderBy('kode_cpmk')])
+            ->orderBy('semester')
+            ->orderBy('kode_mk')
+            ->get();
+
+        $headerRow = [
+            ['label' => 'Kode MK', 'bg' => 'F59E0B'],
+            ['label' => 'Kode CPMK', 'bg' => 'F59E0B'],
+            ['label' => 'Deskripsi CPMK', 'bg' => 'F59E0B'],
+            ['label' => 'CPL', 'bg' => 'F59E0B'],
+            ['label' => 'Kode Sub-CPMK', 'bg' => 'F59E0B'],
+            ['label' => 'Deskripsi Sub-CPMK', 'bg' => 'F59E0B'],
+            ['label' => 'Bobot', 'bg' => 'F59E0B'],
+        ];
+
+        $rows = [];
+        foreach ($mkList as $mk) {
+            foreach ($mk->cpmk as $cpmk) {
+                $cplKode = $cpmk->cplProdi->kode_cpl ?? '';
+
+                if ($cpmk->subCpmk->isEmpty()) {
+                    $rows[] = [$mk->kode_mk, $cpmk->kode_cpmk, $cpmk->deskripsi, $cplKode, '', '', ''];
+                    continue;
+                }
+
+                foreach ($cpmk->subCpmk as $sub) {
+                    $rows[] = [
+                        $mk->kode_mk,
+                        $cpmk->kode_cpmk,
+                        $cpmk->deskripsi,
+                        $cplKode,
+                        $sub->kode_sub_cpmk,
+                        $sub->deskripsi,
+                        $sub->bobot,
+                    ];
+                }
+            }
+        }
+
+        return $excel->download("mk-cpmk-subcpmk-{$kurikulum->kode}.xlsx", [
+            'MK-CPMK-SubCPMK' => [
+                'headerRows' => [$headerRow],
+                'rows'       => $rows,
+                'colWidths'  => [12, 14, 50, 10, 14, 50, 10],
+            ],
+        ]);
     }
 
     // VIEW 2: Teknik Penilaian CPMK (checkboxes matrix)
@@ -163,6 +219,7 @@ class PenilaianController extends Controller
                     'tahap_penilaian' => $fields['tahap_penilaian'] ?? 'Awal-Tengah Semester',
                     'instrumen'       => $fields['instrumen'] ?? null,
                     'kriteria'        => $fields['kriteria'] ?? null,
+                    'skor_maks'       => isset($fields['skor_maks']) && $fields['skor_maks'] !== '' ? $fields['skor_maks'] : null,
                     'teknik_quiz'        => ! empty($fields['teknik_quiz']),
                     'teknik_observasi'   => ! empty($fields['teknik_observasi']),
                     'teknik_unjuk_kerja' => ! empty($fields['teknik_unjuk_kerja']),
@@ -210,6 +267,71 @@ class PenilaianController extends Controller
         }
 
         return redirect()->route('kurikulum.penilaian.bobot', $kurikulum)
+            ->with('success', 'Bobot penilaian berhasil disimpan.');
+    }
+
+    // VIEW 4b: Bobot Penilaian — diurutkan per MK (Tabel 18a)
+    public function bobotMk(Kurikulum $kurikulum)
+    {
+        $mkList = $kurikulum->mataKuliah()
+            ->with(['cpmk' => fn ($q) => $q
+                ->with(['cplProdi', 'penilaian'])
+                ->orderBy('kode_cpmk')])
+            ->orderBy('semester')
+            ->orderBy('kode_mk')
+            ->get();
+
+        // Build tableData: MK → [CPL → [CPMK rows]]
+        $tableData = [];
+        foreach ($mkList as $mk) {
+            if ($mk->cpmk->isEmpty()) continue;
+
+            // Group CPMK by CPL
+            $cplRows = [];
+            foreach ($mk->cpmk->groupBy('id_cpl') as $cplId => $cpmks) {
+                $cpl = $cpmks->first()->cplProdi;
+                if (!$cpl) continue;
+                $cplRows[] = [
+                    'cpl'   => $cpl,
+                    'cpmks' => $cpmks->sortBy('kode_cpmk')->values(),
+                ];
+            }
+            // Sort by CPL kode
+            usort($cplRows, fn ($a, $b) => strcmp($a['cpl']->kode_cpl, $b['cpl']->kode_cpl));
+
+            $totalRows = array_sum(array_map(fn ($r) => count($r['cpmks']), $cplRows));
+            if ($totalRows === 0) continue;
+
+            $tableData[] = [
+                'mk'        => $mk,
+                'cpl_rows'  => $cplRows,
+                'row_count' => $totalRows,
+            ];
+        }
+
+        return view('kurikulum.penilaian.bobot-mk', compact('kurikulum', 'mkList', 'tableData'));
+    }
+
+    public function saveBobotMk(Request $request, Kurikulum $kurikulum)
+    {
+        // Same logic as saveBobotPenilaian — saves individual bobot fields
+        $data = $request->input('penilaian', []);
+        foreach ($data as $cpmkId => $fields) {
+            $cpmk = Cpmk::where('id', $cpmkId)->where('id_kurikulum', $kurikulum->id)->first();
+            if (!$cpmk) continue;
+            CpmkPenilaian::updateOrCreate(
+                ['id_cpmk' => $cpmkId],
+                [
+                    'bobot_quiz'        => $fields['bobot_quiz']        ?: null,
+                    'bobot_observasi'   => $fields['bobot_observasi']   ?: null,
+                    'bobot_unjuk_kerja' => $fields['bobot_unjuk_kerja'] ?: null,
+                    'bobot_uts'         => $fields['bobot_uts']         ?: null,
+                    'bobot_uas'         => $fields['bobot_uas']         ?: null,
+                    'bobot_tes_lisan'   => $fields['bobot_tes_lisan']   ?: null,
+                ]
+            );
+        }
+        return redirect()->route('kurikulum.penilaian.bobot-mk', $kurikulum)
             ->with('success', 'Bobot penilaian berhasil disimpan.');
     }
 
@@ -326,10 +448,10 @@ class PenilaianController extends Controller
             ->orderBy('kode_cpmk')
             ->get();
 
-        // Semua MK untuk selector tambah
+        // Semua MK untuk tabel dan selector tambah
         $mkList = $kurikulum->mataKuliah()
             ->orderBy('semester')->orderBy('kode_mk')
-            ->get(['id', 'kode_mk', 'nama_mk', 'semester']);
+            ->get(['id', 'kode_mk', 'nama_mk', 'semester', 'sks_teori', 'sks_praktikum', 'sks_total']);
 
         $semesterRange = range(1, 8);
 
@@ -430,5 +552,254 @@ class PenilaianController extends Controller
         $cpmk->delete();
 
         return back()->with('success', $kode . ' berhasil dihapus dari MK.');
+    }
+
+    // ── EXPORT METHODS ────────────────────────────────────────────────────────
+
+    public function exportTeknikPenilaian(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        [$cplList, $cpmkList] = $this->loadCpmkData($kurikulum);
+
+        $blue = '3B82F6';
+        $header = [
+            ['label' => 'CPL', 'bg' => $blue],
+            ['label' => 'Kode CPMK', 'bg' => $blue],
+            ['label' => 'Deskripsi CPMK', 'bg' => $blue],
+            ['label' => 'Mata Kuliah', 'bg' => $blue],
+            ['label' => 'Quiz', 'bg' => $blue],
+            ['label' => 'Observasi', 'bg' => $blue],
+            ['label' => 'Unjuk Kerja', 'bg' => $blue],
+            ['label' => 'UTS', 'bg' => $blue],
+            ['label' => 'UAS', 'bg' => $blue],
+            ['label' => 'Tes Lisan', 'bg' => $blue],
+        ];
+
+        $rows = [];
+        foreach ($cplList as $cpl) {
+            foreach ($cpmkList->where('id_cpl', $cpl->id) as $c) {
+                $p = $c->penilaian;
+                $rows[] = [
+                    $cpl->kode_cpl,
+                    $c->kode_cpmk,
+                    $c->deskripsi,
+                    $c->mataKuliah?->kode_mk ?? '—',
+                    $p && $p->teknik_quiz ? 'Ya' : '',
+                    $p && $p->teknik_observasi ? 'Ya' : '',
+                    $p && $p->teknik_unjuk_kerja ? 'Ya' : '',
+                    $p && $p->teknik_uts ? 'Ya' : '',
+                    $p && $p->teknik_uas ? 'Ya' : '',
+                    $p && $p->teknik_tes_lisan ? 'Ya' : '',
+                ];
+            }
+        }
+
+        return $excel->download("teknik-penilaian-{$kurikulum->kode}.xlsx", [
+            'Teknik Penilaian' => ['headerRows' => [$header], 'rows' => $rows, 'colWidths' => [12,14,50,14,8,10,12,8,8,10]],
+        ]);
+    }
+
+    public function exportTahapMekanisme(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $cplList = $kurikulum->cplProdi()->orderByRaw("FIELD(kategori,'Sikap','Keterampilan Umum','Keterampilan Khusus','Pengetahuan')")->orderBy('urutan')->get();
+        $allCpmk = Cpmk::with(['mataKuliah:id,kode_mk,nama_mk,semester', 'penilaian'])
+            ->where('id_kurikulum', $kurikulum->id)
+            ->whereIn('id_cpl', $cplList->pluck('id'))
+            ->orderBy('kode_cpmk')->get();
+
+        $blue = '1D4ED8';
+        $header = [
+            ['label' => 'CPL', 'bg' => $blue], ['label' => 'MK', 'bg' => $blue], ['label' => 'Semester', 'bg' => $blue],
+            ['label' => 'Kode CPMK', 'bg' => $blue], ['label' => 'Deskripsi', 'bg' => $blue],
+            ['label' => 'Tahap Penilaian', 'bg' => $blue], ['label' => 'Instrumen', 'bg' => $blue],
+            ['label' => 'Kriteria', 'bg' => $blue], ['label' => 'Skor Maks', 'bg' => $blue],
+        ];
+
+        $rows = [];
+        foreach ($cplList as $cpl) {
+            foreach ($allCpmk->where('id_cpl', $cpl->id)->sortBy('kode_cpmk') as $c) {
+                $p = $c->penilaian;
+                $rows[] = [
+                    $cpl->kode_cpl,
+                    $c->mataKuliah?->kode_mk ?? '—',
+                    $c->mataKuliah?->semester ?? '—',
+                    $c->kode_cpmk,
+                    $c->deskripsi,
+                    $p?->tahap_penilaian ?? '—',
+                    $p?->instrumen ?? '—',
+                    $p?->kriteria ?? '—',
+                    $p?->skor_maks ?? '—',
+                ];
+            }
+        }
+
+        return $excel->download("tahap-mekanisme-{$kurikulum->kode}.xlsx", [
+            'Tahap & Mekanisme' => ['headerRows' => [$header], 'rows' => $rows, 'colWidths' => [12,12,10,14,50,24,24,40,10]],
+        ]);
+    }
+
+    public function exportBobotPenilaian(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        [$cplList, $cpmkList] = $this->loadCpmkData($kurikulum);
+
+        $blue = '1E40AF';
+        $header = [
+            ['label' => 'CPL', 'bg' => $blue], ['label' => 'Kode CPMK', 'bg' => $blue],
+            ['label' => 'Deskripsi', 'bg' => $blue], ['label' => 'MK', 'bg' => $blue],
+            ['label' => 'Quiz (%)', 'bg' => $blue], ['label' => 'Observasi (%)', 'bg' => $blue],
+            ['label' => 'Unjuk Kerja (%)', 'bg' => $blue], ['label' => 'UTS (%)', 'bg' => $blue],
+            ['label' => 'UAS (%)', 'bg' => $blue], ['label' => 'Tes Lisan (%)', 'bg' => $blue],
+        ];
+
+        $rows = [];
+        foreach ($cplList as $cpl) {
+            foreach ($cpmkList->where('id_cpl', $cpl->id) as $c) {
+                $p = $c->penilaian;
+                $rows[] = [
+                    $cpl->kode_cpl, $c->kode_cpmk, $c->deskripsi, $c->mataKuliah?->kode_mk ?? '—',
+                    $p?->bobot_quiz ?? '', $p?->bobot_observasi ?? '', $p?->bobot_unjuk_kerja ?? '',
+                    $p?->bobot_uts ?? '', $p?->bobot_uas ?? '', $p?->bobot_tes_lisan ?? '',
+                ];
+            }
+        }
+
+        return $excel->download("bobot-penilaian-cpl-{$kurikulum->kode}.xlsx", [
+            'Bobot Penilaian CPL' => ['headerRows' => [$header], 'rows' => $rows, 'colWidths' => [12,14,50,14,10,12,14,10,10,12]],
+        ]);
+    }
+
+    public function exportBobotMk(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $mkList = $kurikulum->mataKuliah()
+            ->with(['cpmk' => fn ($q) => $q->with(['cplProdi', 'penilaian'])->orderBy('kode_cpmk')])
+            ->orderBy('semester')->orderBy('kode_mk')->get();
+
+        $blue = '1E3A8A';
+        $header = [
+            ['label' => 'MK', 'bg' => $blue], ['label' => 'Semester', 'bg' => $blue],
+            ['label' => 'CPL', 'bg' => $blue], ['label' => 'Kode CPMK', 'bg' => $blue],
+            ['label' => 'Deskripsi', 'bg' => $blue],
+            ['label' => 'Quiz (%)', 'bg' => $blue], ['label' => 'Observasi (%)', 'bg' => $blue],
+            ['label' => 'Unjuk Kerja (%)', 'bg' => $blue], ['label' => 'UTS (%)', 'bg' => $blue],
+            ['label' => 'UAS (%)', 'bg' => $blue], ['label' => 'Tes Lisan (%)', 'bg' => $blue],
+        ];
+
+        $rows = [];
+        foreach ($mkList as $mk) {
+            foreach ($mk->cpmk as $c) {
+                $p = $c->penilaian;
+                $rows[] = [
+                    $mk->kode_mk, $mk->semester, $c->cplProdi?->kode_cpl ?? '—', $c->kode_cpmk, $c->deskripsi,
+                    $p?->bobot_quiz ?? '', $p?->bobot_observasi ?? '', $p?->bobot_unjuk_kerja ?? '',
+                    $p?->bobot_uts ?? '', $p?->bobot_uas ?? '', $p?->bobot_tes_lisan ?? '',
+                ];
+            }
+        }
+
+        return $excel->download("bobot-penilaian-mk-{$kurikulum->kode}.xlsx", [
+            'Bobot Penilaian MK' => ['headerRows' => [$header], 'rows' => $rows, 'colWidths' => [14,10,12,14,50,10,12,14,10,10,12]],
+        ]);
+    }
+
+    public function exportRumusanNilai(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $mkList = $kurikulum->mataKuliah()
+            ->with(['cpmk' => fn ($q) => $q->with(['cplProdi', 'penilaian', 'subCpmk' => fn ($q2) => $q2->orderBy('urutan')])->orderBy('kode_cpmk')])
+            ->orderBy('semester')->orderBy('kode_mk')->get();
+
+        $blue = '2563EB';
+        $header = [
+            ['label' => 'MK', 'bg' => $blue], ['label' => 'Semester', 'bg' => $blue],
+            ['label' => 'CPL', 'bg' => $blue], ['label' => 'Kode CPMK', 'bg' => $blue],
+            ['label' => 'Deskripsi CPMK', 'bg' => $blue], ['label' => 'Skor Maks CPMK', 'bg' => $blue],
+        ];
+
+        $rows = [];
+        foreach ($mkList as $mk) {
+            foreach ($mk->cpmk as $c) {
+                $p = $c->penilaian;
+                $skor = $p && !is_null($p->skor_maks) ? $p->skor_maks : $c->subCpmk->sum('bobot');
+                $rows[] = [
+                    $mk->kode_mk, $mk->semester, $c->cplProdi?->kode_cpl ?? '—',
+                    $c->kode_cpmk, $c->deskripsi, $skor,
+                ];
+            }
+        }
+
+        return $excel->download("rumusan-nilai-mk-{$kurikulum->kode}.xlsx", [
+            'Rumusan Nilai MK' => ['headerRows' => [$header], 'rows' => $rows, 'colWidths' => [14,10,12,14,50,14]],
+        ]);
+    }
+
+    public function exportRumusanNilaiCpl(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $cplList = $kurikulum->cplProdi()
+            ->orderByRaw("FIELD(kategori,'Sikap','Keterampilan Umum','Keterampilan Khusus','Pengetahuan')")
+            ->orderBy('urutan')->get();
+
+        $allCpmk = Cpmk::with(['mataKuliah', 'penilaian', 'subCpmk'])
+            ->where('id_kurikulum', $kurikulum->id)
+            ->whereIn('id_cpl', $cplList->pluck('id'))
+            ->orderBy('kode_cpmk')->get();
+
+        $blue = '1E40AF';
+        $header = [
+            ['label' => 'CPL', 'bg' => $blue], ['label' => 'MK', 'bg' => $blue],
+            ['label' => 'Semester', 'bg' => $blue], ['label' => 'Kode CPMK', 'bg' => $blue],
+            ['label' => 'Deskripsi', 'bg' => $blue], ['label' => 'Skor Maks', 'bg' => $blue],
+        ];
+
+        $rows = [];
+        foreach ($cplList as $cpl) {
+            foreach ($allCpmk->where('id_cpl', $cpl->id)->sortBy('kode_cpmk') as $c) {
+                $p    = $c->penilaian;
+                $skor = $p && !is_null($p->skor_maks) ? $p->skor_maks : $c->subCpmk->sum('bobot');
+                $rows[] = [
+                    $cpl->kode_cpl, $c->mataKuliah?->kode_mk ?? '—',
+                    $c->mataKuliah?->semester ?? '—', $c->kode_cpmk, $c->deskripsi, $skor,
+                ];
+            }
+        }
+
+        return $excel->download("rumusan-nilai-cpl-{$kurikulum->kode}.xlsx", [
+            'Rumusan Nilai CPL' => ['headerRows' => [$header], 'rows' => $rows, 'colWidths' => [12,14,10,14,50,12]],
+        ]);
+    }
+
+    public function exportPetaSemester(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $cplList = $kurikulum->cplProdi()
+            ->orderByRaw("FIELD(kategori,'Sikap','Keterampilan Umum','Keterampilan Khusus','Pengetahuan')")
+            ->orderBy('urutan')->get();
+
+        $allCpmk = Cpmk::with(['mataKuliah:id,kode_mk,nama_mk,semester'])
+            ->where('id_kurikulum', $kurikulum->id)
+            ->whereIn('id_cpl', $cplList->pluck('id'))
+            ->orderBy('kode_cpmk')->get();
+
+        $smts = range(1, 8);
+        $blue = '3B82F6';
+
+        $header = array_merge(
+            [['label' => 'CPL', 'bg' => $blue], ['label' => 'Kode CPMK', 'bg' => $blue], ['label' => 'Deskripsi', 'bg' => $blue]],
+            array_map(fn ($s) => ['label' => "Smt $s", 'bg' => $blue], $smts)
+        );
+
+        $rows = [];
+        foreach ($cplList as $cpl) {
+            $groups = $allCpmk->where('id_cpl', $cpl->id)->groupBy('kode_cpmk');
+            foreach ($groups as $kode => $records) {
+                $row = [$cpl->kode_cpl, $kode, $records->first()->deskripsi];
+                foreach ($smts as $smt) {
+                    $mks = $records->filter(fn ($r) => $r->mataKuliah && $r->mataKuliah->semester == $smt)
+                        ->map(fn ($r) => $r->mataKuliah->kode_mk)->implode(', ');
+                    $row[] = $mks;
+                }
+                $rows[] = $row;
+            }
+        }
+
+        return $excel->download("peta-cpl-cpmk-semester-{$kurikulum->kode}.xlsx", [
+            'CPL-CPMK-Semester' => ['headerRows' => [$header], 'rows' => $rows, 'colWidths' => [12,14,50,12,12,12,12,12,12,12,12]],
+        ]);
     }
 }

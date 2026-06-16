@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Kaprodi;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Kurikulum;
-use App\Models\LogEvaluasiCqi;
 use App\Models\RpsHeader;
 use App\Models\User;
 
@@ -16,7 +15,6 @@ class DashboardController extends Controller
         $totalUsers    = User::count();
         $kurikulumAktif = Kurikulum::where('status', 'aktif')->count();
         $rpsPending    = RpsHeader::where('status', 'review')->count();
-        $cqiAktif      = LogEvaluasiCqi::whereIn('status', ['belum', 'proses'])->count();
 
         $rpsPendingList = RpsHeader::with(['mataKuliah', 'dosenPengembang', 'semester'])
                                    ->where('status', 'review')
@@ -30,7 +28,7 @@ class DashboardController extends Controller
                                      ->get();
 
         return view('kaprodi.dashboard', compact(
-            'totalUsers', 'kurikulumAktif', 'rpsPending', 'cqiAktif',
+            'totalUsers', 'kurikulumAktif', 'rpsPending',
             'rpsPendingList', 'recentActivity'
         ));
     }

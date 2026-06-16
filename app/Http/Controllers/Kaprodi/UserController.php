@@ -50,6 +50,7 @@ class UserController extends Controller
             'identifier'    => ['nullable', 'string', 'max:30'],
             'program_studi' => ['nullable', 'string', 'max:100'],
             'tahun_masuk'   => ['nullable', 'integer', 'min:2000', 'max:' . date('Y')],
+            'kelas'         => ['nullable', 'string', 'max:20'],
             'status_aktif'  => ['nullable', Rule::in(['aktif', 'nonaktif', 'cuti'])],
         ]);
 
@@ -84,6 +85,7 @@ class UserController extends Controller
             'identifier'    => ['nullable', 'string', 'max:30'],
             'program_studi' => ['nullable', 'string', 'max:100'],
             'tahun_masuk'   => ['nullable', 'integer', 'min:2000', 'max:' . date('Y')],
+            'kelas'         => ['nullable', 'string', 'max:20'],
             'status_aktif'  => ['nullable', Rule::in(['aktif', 'nonaktif', 'cuti'])],
         ]);
 

@@ -37,11 +37,6 @@ class SemesterAkademik extends Model
         return $this->hasMany(RpsHeader::class, 'id_semester');
     }
 
-    public function cqiLogs(): HasMany
-    {
-        return $this->hasMany(LogEvaluasiCqi::class, 'id_semester');
-    }
-
     // ── Scopes ─────────────────────────────────────────────────
 
     public function scopeAktif($query)

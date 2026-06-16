@@ -6,7 +6,6 @@ use App\Models\Kurikulum;
 use App\Models\MataKuliah;
 use App\Models\User;
 use App\Observers\MataKuliahObserver;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -47,11 +46,7 @@ class AppServiceProvider extends ServiceProvider
             }
 
             if ($user->isTimKurikulum()) {
-                return DB::table('tim_kurikulum')
-                    ->join('periode_kurikulum', 'tim_kurikulum.id_periode', '=', 'periode_kurikulum.id')
-                    ->where('periode_kurikulum.id_kurikulum', $kurikulum->id)
-                    ->where('tim_kurikulum.id_user', $user->id)
-                    ->exists();
+                return true;
             }
 
             return false;

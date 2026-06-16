@@ -11,6 +11,10 @@
     <span class="text-gray-700 font-medium">Matriks MK ↔ CPL</span>
 @endsection
 
+@section('header-actions')
+    @include('layouts._export-button', ['route' => route('kurikulum.pivot.mk-cpl.export', $kurikulum)])
+@endsection
+
 @section('content')
 
 @if ($mkList->isEmpty() || $cplList->isEmpty())
@@ -24,6 +28,17 @@
         </div>
     </div>
 @else
+
+{{-- Auto CPMK info banner --}}
+<div class="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 mb-3 text-xs text-emerald-800">
+    <svg class="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <div class="space-y-0.5">
+        <p><strong>CPMK & Sub-CPMK dibuat otomatis</strong> — setiap centang MK↔CPL baru yang dibuat akan otomatis membuat CPMK placeholder beserta 2 Sub-CPMK default.</p>
+        <p class="text-emerald-600">Hasil auto-generate dapat dilihat dan disesuaikan di halaman <a href="{{ route('kurikulum.penilaian.mk-cpmk-subcpmk', $kurikulum) }}" class="underline font-medium">Peta MK–CPMK–Sub-CPMK</a>.</p>
+    </div>
+</div>
 
 {{-- Legend (collapsible) --}}
 <details class="mb-3 bg-white border border-gray-100 rounded-xl shadow-sm">
@@ -101,45 +116,31 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @php
-                        $bySemester = $mkList->groupBy('semester');
-                        $rowNo = 0;
-                    @endphp
-                    @foreach ($bySemester as $smt => $mks)
-                        {{-- Semester group row --}}
-                        <tr>
-                            <td colspan="{{ $cplList->count() + 1 }}"
-                                style="background:#FDE68A;color:#78350f"
-                                class="px-4 py-2 text-xs font-bold uppercase tracking-wider border border-amber-300 sticky left-0">
-                                SEMESTER {{ $smt }}
+                    @php $sortedMk = $mkList->sortBy('kode_mk')->values(); @endphp
+                    @foreach ($sortedMk as $rowNo => $mk)
+                        <tr class="pivot-row" style="{{ $rowNo % 2 === 0 ? 'background:#fff' : 'background:#fffbeb' }}">
+                            <td style="min-width:240px;background:{{ $rowNo % 2 === 0 ? '#dbeafe' : '#eff6ff' }}"
+                                class="px-4 py-2.5 border border-amber-200 sticky left-0 z-10">
+                                <span class="font-mono font-bold text-blue-800 text-xs cursor-help"
+                                      data-tooltip="{{ $mk->kode_mk }}: {{ $mk->nama_mk }} (Semester {{ $mk->semester }}, {{ $mk->sks_total }} SKS)"
+                                      data-tip-label="Mata Kuliah">{{ $mk->kode_mk }}</span>
+                                <span class="text-blue-600 text-xs ml-1.5">{{ $mk->nama_mk }}</span>
                             </td>
-                        </tr>
-                        @foreach ($mks as $mk)
-                            @php $rowNo++; @endphp
-                            <tr class="pivot-row" style="{{ $rowNo % 2 === 0 ? 'background:#fffbeb' : 'background:#fff' }}">
-                                <td style="min-width:240px;background:{{ $rowNo % 2 === 0 ? '#eff6ff' : '#dbeafe' }}"
-                                    class="px-4 py-2.5 border border-amber-200 sticky left-0 z-10">
-                                    <span class="font-mono font-bold text-blue-800 text-xs cursor-help"
-                                          data-tooltip="{{ $mk->kode_mk }}: {{ $mk->nama_mk }} (Semester {{ $mk->semester }}, {{ $mk->sks_total }} SKS)"
-                                          data-tip-label="Mata Kuliah">{{ $mk->kode_mk }}</span>
-                                    <span class="text-blue-600 text-xs ml-1.5">{{ $mk->nama_mk }}</span>
+                            @foreach ($cplList as $cpl)
+                                @php $checked = in_array($cpl->id, $existing[$mk->id] ?? []); @endphp
+                                <td class="border border-amber-100 text-center align-middle pivot-cell {{ $checked ? 'is-checked' : '' }}"
+                                    style="min-width:72px;height:42px"
+                                    @unless ($kurikulum->isArsip())
+                                        data-table="pivot_mk_cpl"
+                                        data-keys='{"id_mk":{{ $mk->id }},"id_cpl":{{ $cpl->id }}}'
+                                    @endunless>
+                                    <input type="checkbox"
+                                           class="pivot-cb"
+                                           {{ $checked ? 'checked' : '' }}
+                                           {{ $kurikulum->isArsip() ? 'disabled' : '' }}>
                                 </td>
-                                @foreach ($cplList as $cpl)
-                                    @php $checked = in_array($cpl->id, $existing[$mk->id] ?? []); @endphp
-                                    <td class="border border-amber-100 text-center align-middle pivot-cell {{ $checked ? 'is-checked' : '' }}"
-                                        style="min-width:72px;height:42px"
-                                        @unless ($kurikulum->isArsip())
-                                            data-table="pivot_mk_cpl"
-                                            data-keys='{"id_mk":{{ $mk->id }},"id_cpl":{{ $cpl->id }}}'
-                                        @endunless>
-                                        <input type="checkbox"
-                                               class="pivot-cb"
-                                               {{ $checked ? 'checked' : '' }}
-                                               {{ $kurikulum->isArsip() ? 'disabled' : '' }}>
-                                    </td>
-                                @endforeach
-                            </tr>
-                        @endforeach
+                            @endforeach
+                        </tr>
                     @endforeach
                 </tbody>
             </table>

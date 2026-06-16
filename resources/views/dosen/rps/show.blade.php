@@ -73,11 +73,15 @@
             <p class="font-medium text-gray-700">{{ $rps->tanggal_penyusunan?->translatedFormat('d F Y') ?? '—' }}</p>
         </div>
         <div>
-            <p class="text-xs text-gray-400 mb-0.5">SKS</p>
+            <p class="text-xs text-gray-400 mb-0.5">SKS di RPS ini</p>
+            @if ($rps->sks_teori !== null || $rps->sks_praktikum !== null)
             <p class="font-medium text-gray-700">
-                {{ ($mk->sks_teori ?? 0) + ($mk->sks_praktikum ?? 0) }} SKS
-                <span class="text-xs text-gray-400">(T={{ $mk->sks_teori ?? 0 }} P={{ $mk->sks_praktikum ?? 0 }})</span>
+                {{ ($rps->sks_teori ?? 0) + ($rps->sks_praktikum ?? 0) }} SKS
+                <span class="text-xs text-gray-400">(T={{ $rps->sks_teori ?? 0 }} P={{ $rps->sks_praktikum ?? 0 }})</span>
             </p>
+            @else
+            <p class="text-xs text-amber-600">Belum diisi — lengkapi di edit RPS</p>
+            @endif
         </div>
     </div>
     @if ($rps->status === 'disahkan' && $rps->disahkan_pada)
@@ -132,6 +136,37 @@
                 @empty
                     <p class="text-xs text-gray-400 italic">Belum ada Sub-CPMK.</p>
                 @endforelse
+            </div>
+            <div>
+                <p class="text-[10px] font-bold text-purple-700 uppercase tracking-wider mb-2">Korelasi CPMK terhadap Sub-CPMK</p>
+                @if ($cpmkList->isNotEmpty() && $subCpmkAll->isNotEmpty())
+                <div class="overflow-x-auto rounded-lg border border-gray-200">
+                    <table class="border-collapse text-xs w-full">
+                        <thead>
+                            <tr>
+                                <th class="border border-gray-200 bg-gray-50 px-2 py-1.5 text-left text-[10px] font-bold text-gray-500 sticky left-0 z-10">CPMK \ Sub-CPMK</th>
+                                @foreach ($subCpmkAll as $sc)
+                                    <th class="border border-gray-200 bg-green-50 px-2 py-1.5 text-center text-[10px] font-bold text-green-700 font-mono">{{ $sc->kode_sub_cpmk }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($cpmkList as $cpmk)
+                            <tr>
+                                <th class="border border-gray-200 bg-blue-50 px-2 py-1.5 text-left text-[10px] font-bold text-blue-700 font-mono sticky left-0 z-10">{{ $cpmk->kode_cpmk }}</th>
+                                @foreach ($subCpmkAll as $sc)
+                                    <td class="border border-gray-200 text-center px-2 py-1.5 {{ $sc->id_cpmk == $cpmk->id ? 'text-emerald-600 font-bold' : 'text-gray-300' }}">
+                                        {{ $sc->id_cpmk == $cpmk->id ? '✓' : '—' }}
+                                    </td>
+                                @endforeach
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @else
+                    <p class="text-xs text-gray-400 italic">Belum ada CPMK / Sub-CPMK untuk ditampilkan.</p>
+                @endif
             </div>
         </div>
     </div>

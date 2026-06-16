@@ -73,11 +73,6 @@ class Kurikulum extends Model
         return $this->hasMany(MataKuliah::class, 'id_kurikulum');
     }
 
-    public function periode(): HasMany
-    {
-        return $this->hasMany(PeriodeKurikulum::class, 'id_kurikulum');
-    }
-
     public function arsipRapat(): HasMany
     {
         return $this->hasMany(ArsipRapat::class, 'id_kurikulum');
@@ -107,28 +102,6 @@ class Kurikulum extends Model
     {
         return $this->belongsTo(User::class, 'disahkan_oleh');
     }
-
-    public function logEvaluasiCqi(): HasMany
-    {
-        return $this->hasMany(LogEvaluasiCqi::class, 'id_kurikulum');
-    }
-
-    public function lessonLearned(): HasMany
-    {
-        return $this->hasMany(LessonLearned::class, 'id_kurikulum');
-    }
-
-    public function checklistLedik(): HasMany
-    {
-        return $this->hasMany(ChecklistLedik::class, 'id_kurikulum');
-    }
-
-    public function logDistribusi(): HasMany
-    {
-        return $this->hasMany(LogDistribusi::class, 'id_kurikulum');
-    }
-
-    // Tim Kurikulum diakses via Periode (tidak ada FK langsung ke kurikulum)
 
     // ── Helpers ────────────────────────────────────────────────
 

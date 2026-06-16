@@ -43,7 +43,7 @@
                     <div class="flex items-start gap-2 text-xs">
                         <span class="font-mono font-bold text-blue-700 shrink-0 w-20">{{ $c->kode_cpmk }}</span>
                         <span class="text-gray-500 leading-snug">{{ \Str::limit($c->deskripsi, 70) }}
-                            <span class="text-gray-400">({{ $c->mataKuliah->kode_mk ?? '' }})</span>
+                            <span class="text-gray-400">({{ $c->mataKuliah?->kode_mk ?? '' }})</span>
                         </span>
                     </div>
                 @endforeach

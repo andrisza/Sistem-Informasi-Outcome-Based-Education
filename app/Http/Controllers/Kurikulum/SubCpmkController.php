@@ -106,7 +106,7 @@ class SubCpmkController extends Controller
         $cplPart  = $m[1] ?? '01';
         $cpmkPart = $m[2] ?? '1';
 
-        $subCount = SubCpmk::where('id_cpmk', $cpmk->id)->withTrashed()->count() + 1;
+        $subCount = SubCpmk::where('id_cpmk', $cpmk->id)->count() + 1;
 
         // Format: Sub-CPMK{cpl_2digit}{cpmk_1digit}{sub_1digit} → Sub-CPMK0111
         return 'Sub-CPMK' . $cplPart . $cpmkPart . $subCount;

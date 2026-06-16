@@ -83,23 +83,38 @@
 </div>
 
 {{-- Quick links --}}
-<div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-4">
+<div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
     @php
         $links = [
-            ['label' => 'Buat Kurikulum', 'href' => route('kurikulum.create'),  'icon' => 'document', 'color' => 'blue'],
-            ['label' => 'Daftar Kurikulum','href' => route('kurikulum.index'),  'icon' => 'book-open', 'color' => 'violet'],
+            ['label' => 'Buat Kurikulum',   'href' => route('kurikulum.create'),  'icon' => 'document',      'color' => 'blue'],
+            ['label' => 'Daftar Kurikulum', 'href' => route('kurikulum.index'),   'icon' => 'book-open',     'color' => 'violet'],
+            ['label' => 'Arsip Rapat',      'href' => '#',                         'icon' => 'meeting',       'color' => 'amber'],
+            ['label' => 'Generate PDF',     'href' => '#',                         'icon' => 'document',      'color' => 'emerald'],
         ];
         $qlColors = [
-            'blue'   => 'bg-blue-50 hover:bg-blue-100 text-blue-700',
-            'violet' => 'bg-violet-50 hover:bg-violet-100 text-violet-700',
+            'blue'    => 'bg-blue-50 hover:bg-blue-100 text-blue-700',
+            'violet'  => 'bg-violet-50 hover:bg-violet-100 text-violet-700',
+            'amber'   => 'bg-amber-50 hover:bg-amber-100 text-amber-700',
+            'emerald' => 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700',
         ];
     @endphp
     @foreach ($links as $link)
-        <a href="{{ $link['href'] }}"
-           class="flex flex-col items-center gap-2 px-4 py-5 rounded-xl border border-gray-100 shadow-sm {{ $qlColors[$link['color']] }} transition-colors text-center">
-            @include('layouts._icon', ['name' => $link['icon'], 'class' => 'w-6 h-6'])
-            <span class="text-xs font-medium">{{ $link['label'] }}</span>
-        </a>
+        @if (!$kurikulumList->isEmpty() && in_array($link['label'], ['Arsip Rapat', 'Generate PDF']))
+            @php $firstK = $kurikulumList->first(); @endphp
+            <a href="{{ $link['label'] === 'Arsip Rapat'
+                ? route('kurikulum.arsip-rapat.index', $firstK)
+                : route('kurikulum.generate-pdf', $firstK) }}"
+               class="flex flex-col items-center gap-2 px-4 py-5 rounded-xl border border-gray-100 shadow-sm {{ $qlColors[$link['color']] }} transition-colors text-center">
+                @include('layouts._icon', ['name' => $link['icon'], 'class' => 'w-6 h-6'])
+                <span class="text-xs font-medium">{{ $link['label'] }}</span>
+            </a>
+        @else
+            <a href="{{ $link['href'] }}"
+               class="flex flex-col items-center gap-2 px-4 py-5 rounded-xl border border-gray-100 shadow-sm {{ $qlColors[$link['color']] }} transition-colors text-center">
+                @include('layouts._icon', ['name' => $link['icon'], 'class' => 'w-6 h-6'])
+                <span class="text-xs font-medium">{{ $link['label'] }}</span>
+            </a>
+        @endif
     @endforeach
 </div>
 

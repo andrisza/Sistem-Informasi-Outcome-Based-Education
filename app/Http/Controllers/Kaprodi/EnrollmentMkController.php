@@ -177,8 +177,17 @@ class EnrollmentMkController extends Controller
         $semesters = SemesterAkademik::orderByDesc('tahun_akademik')->get();
         $semesterAktif = SemesterAkademik::where('is_aktif', true)->first();
 
+        // Map pengampuan: {id_semester: {id_mk: ['Nama Dosen', ...]}}
+        // Dipakai view untuk menampilkan warning jika MK+semester tidak punya pengampu
+        $pengampuanBySmtMk = DB::table('pengampuan_mk')
+            ->join('users', 'users.id', '=', 'pengampuan_mk.id_dosen')
+            ->select('pengampuan_mk.id_semester', 'pengampuan_mk.id_mk', 'users.name as dosen_name')
+            ->get()
+            ->groupBy('id_semester')
+            ->map(fn($rows) => $rows->groupBy('id_mk')->map(fn($r) => $r->pluck('dosen_name')->values()));
+
         return view('kaprodi.enrollment.batch', compact(
-            'mahasiswaList', 'mkList', 'semesters', 'semesterAktif'
+            'mahasiswaList', 'mkList', 'semesters', 'semesterAktif', 'pengampuanBySmtMk'
         ));
     }
 }

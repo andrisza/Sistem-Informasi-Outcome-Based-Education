@@ -35,8 +35,6 @@
             $mk('Arsip Kurikulum',        $r('kurikulum.index', ['status'=>'arsip']),           'Kurikulum', 'arsip kurikulum lama'),
             $mk('Tambah Kurikulum',       $r('kurikulum.create'),                               'Kurikulum', 'buat kurikulum baru'),
             $mk('Persetujuan RPS',        $r('kaprodi.rps-approval.index'),                     'Kurikulum', 'rps approval review dosen'),
-            $mk('Evaluasi CQI',           $r('kaprodi.cqi.index'),                              'Evaluasi',  'cqi continuous quality improvement'),
-            $mk('Laporan OBE',            $r('kaprodi.reports.index'),                          'Evaluasi',  'laporan obe capaian cpl'),
             $mk('Audit Trail',            $r('kaprodi.activity-log.index'),                     'Sistem',    'log aktivitas history'),
             $mk('Manajemen User',         $r('kaprodi.users.index'),                            'Sistem',    'pengguna akun dosen mahasiswa'),
             $mk('Master Kategori',        $r('admin.master-kategori.index'),                    'Sistem',    'kategori cpl pl bk mk master'),
@@ -64,6 +62,9 @@
                 $mk("Bobot Penilaian [$kode]",         $r('kurikulum.penilaian.bobot', $kId),          'Asesmen',   'bobot persen nilai'),
                 $mk("Rumusan Nilai Akhir MK [$kode]",  $r('kurikulum.penilaian.rumusan', $kId),        'Asesmen',   'skor maks total 100'),
                 $mk("Rumusan Nilai Akhir CPL [$kode]", $r('kurikulum.penilaian.rumusan-cpl', $kId),    'Asesmen',   'lcpl nilai akhir cpl'),
+                $mk("Rekap Nilai per MK [$kode]",      $r('kurikulum.penilaian.rekap-nilai', $kId),    'Asesmen',   'rekap nilai grid input per mata kuliah'),
+                $mk("Proses Penilaian dan Evaluasi CPL [$kode]", $r('kurikulum.penilaian.evaluasi-cpl', $kId), 'Evaluasi & Laporan', 'proses penilaian evaluasi cpl tabel k per cpl'),
+                $mk("Assessment terhadap CPL dan MK [$kode]", $r('kurikulum.penilaian.rekap-cpl', $kId),  'Evaluasi & Laporan', 'assessment cpl mk tabel l'),
                 $mk("Peta Pemenuhan CPL [$kode]",      $r('kurikulum.overview.pemenuhan-cpl', $kId),   'Peta',      'ketercapaian fulfillment visual'),
             ]);
         }
@@ -102,6 +103,9 @@
                 $mk("Bobot Penilaian [$kode]",         $r('kurikulum.penilaian.bobot', $kId),           'Asesmen',     'bobot persen'),
                 $mk("Rumusan Nilai Akhir MK [$kode]",  $r('kurikulum.penilaian.rumusan', $kId),         'Asesmen',     'skor maks'),
                 $mk("Rumusan Nilai Akhir CPL [$kode]", $r('kurikulum.penilaian.rumusan-cpl', $kId),     'Asesmen',     'lcpl total'),
+                $mk("Rekap Nilai per MK [$kode]",      $r('kurikulum.penilaian.rekap-nilai', $kId),     'Asesmen',     'rekap nilai grid input per mata kuliah'),
+                $mk("Proses Penilaian dan Evaluasi CPL [$kode]", $r('kurikulum.penilaian.evaluasi-cpl', $kId), 'Evaluasi & Laporan', 'proses penilaian evaluasi cpl tabel k per cpl'),
+                $mk("Assessment terhadap CPL dan MK [$kode]", $r('kurikulum.penilaian.rekap-cpl', $kId),   'Evaluasi & Laporan', 'assessment cpl mk tabel l'),
                 $mk("Peta Pemenuhan CPL [$kode]",      $r('kurikulum.overview.pemenuhan-cpl', $kId),    'Peta',        'pemenuhan'),
                 $mk("Arsip Rapat [$kode]",             $r('kurikulum.arsip-rapat.index', $kId),         'Administrasi','rapat notulen'),
                 $mk("Tim Kurikulum [$kode]",           $r('kurikulum.tim.index', $kId),                 'Administrasi','tim anggota'),

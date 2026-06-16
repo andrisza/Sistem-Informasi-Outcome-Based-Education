@@ -57,9 +57,4 @@ class MataKuliah extends Model
     {
         return $this->hasMany(RpsHeader::class, 'id_mk');
     }
-
-    public function cqiLogs(): HasMany
-    {
-        return $this->hasMany(LogEvaluasiCqi::class, 'id_mk');
-    }
 }

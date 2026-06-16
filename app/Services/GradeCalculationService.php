@@ -166,34 +166,75 @@ class GradeCalculationService
 
     /**
      * Hitung ulang hasil_cpl untuk satu mahasiswa × CPL × kurikulum × semester.
-     * Dipanggil secara internal — mengagregasi semua hasil_cpmk yang menarget CPL ini.
+     *
+     * Formula panduan OBE (Tabel K):
+     *   Capaian CPL = rata-rata Nilai MK dari semua MK yang berkontribusi ke CPL ini
+     *   Nilai MK    = Σ(hasil_cpmk × bobot_cpmk) / Σ(bobot_cpmk)   [rata-rata berbobot]
+     *
+     * Jika bobot komponen asesmen belum tersedia, fallback ke rata-rata sederhana.
      */
-    private function recalcCplForMahasiswa(
+    public function recalcCplForMahasiswa(
         int $mhsId,
         int $cplId,
         int $kurikulumId,
         int $semesterId
     ): void {
-        // Semua CPMK di kurikulum ini yang menarget CPL ini
-        $cpmkIds = Cpmk::where('id_kurikulum', $kurikulumId)
+        // CPMK yang menarget CPL ini, dengan id_mk untuk grouping per MK
+        $cpmkList = Cpmk::where('id_kurikulum', $kurikulumId)
             ->where('id_cpl', $cplId)
-            ->pluck('id');
+            ->select('id', 'id_mk')
+            ->get();
 
-        if ($cpmkIds->isEmpty()) {
+        if ($cpmkList->isEmpty()) {
             return;
         }
 
-        // Nilai CPMK yang sudah dihitung untuk mahasiswa ini di semester ini
-        $nilaiPerCpmk = HasilCpmk::whereIn('id_cpmk', $cpmkIds)
-            ->where('id_mahasiswa', $mhsId)
-            ->where('id_semester', $semesterId)
-            ->pluck('nilai');
+        $cpmkByMk   = $cpmkList->groupBy('id_mk');
+        $nilaiPerMk = [];
 
-        if ($nilaiPerCpmk->isEmpty()) {
+        foreach ($cpmkByMk as $mkId => $cpmkForMk) {
+            $cpmkIds = $cpmkForMk->pluck('id');
+
+            $hasilForMk = HasilCpmk::whereIn('id_cpmk', $cpmkIds)
+                ->where('id_mahasiswa', $mhsId)
+                ->where('id_semester', $semesterId)
+                ->pluck('nilai', 'id_cpmk');
+
+            if ($hasilForMk->isEmpty()) {
+                continue;
+            }
+
+            // Bobot tiap CPMK dari komponen_asesmen → sub_cpmk → cpmk
+            $bobotRows = DB::table('komponen_asesmen as ka')
+                ->join('sub_cpmk as sc', 'sc.id', '=', 'ka.id_sub_cpmk')
+                ->where('ka.id_mk', $mkId)
+                ->where('ka.id_semester', $semesterId)
+                ->whereNotNull('ka.id_sub_cpmk')
+                ->whereIn('sc.id_cpmk', $cpmkIds)
+                ->select('sc.id_cpmk', DB::raw('SUM(ka.bobot_persen) as total_bobot'))
+                ->groupBy('sc.id_cpmk')
+                ->get()
+                ->keyBy('id_cpmk');
+
+            $totalBobot = (float) $bobotRows->sum('total_bobot');
+
+            if ($totalBobot > 0) {
+                $weighted = 0.0;
+                foreach ($hasilForMk as $cpmkId => $nilai) {
+                    $b = (float) ($bobotRows->get($cpmkId)?->total_bobot ?? 0);
+                    $weighted += (float) $nilai * $b;
+                }
+                $nilaiPerMk[] = round($weighted / $totalBobot, 2);
+            } else {
+                $nilaiPerMk[] = round((float) $hasilForMk->avg(), 2);
+            }
+        }
+
+        if (empty($nilaiPerMk)) {
             return;
         }
 
-        $nilaiCpl = round((float) $nilaiPerCpmk->avg(), 2);
+        $nilaiCpl = round(array_sum($nilaiPerMk) / count($nilaiPerMk), 2);
         $batas    = BatasKetercapaian::where('id_cpl', $cplId)
             ->where('id_kurikulum', $kurikulumId)
             ->value('batas_nilai') ?? 70.0;
@@ -209,7 +250,6 @@ class GradeCalculationService
             ]
         );
 
-        // ── 4. hasil_pl (opsional, via pivot_pl_cpl) ──────────────────────────
         $this->recalcPlForMahasiswa($mhsId, $cplId, $kurikulumId, $semesterId);
     }
 

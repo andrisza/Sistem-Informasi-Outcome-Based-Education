@@ -73,11 +73,9 @@
                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
         </div>
         <div>
-            <label class="block text-xs font-medium text-gray-600 mb-1">Kode Dokumen <span class="text-red-500">*</span></label>
-            <input type="text" name="kode_dokumen" required
-                   value="{{ old('kode_dokumen', $rps->kode_dokumen) }}"
-                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-400 {{ $errors->has('kode_dokumen') ? 'border-red-400' : '' }}">
-            @error('kode_dokumen')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+            <label class="block text-xs font-medium text-gray-600 mb-1">Kode Dokumen</label>
+            <p class="w-full border border-gray-100 bg-gray-50 rounded-lg px-3 py-2 text-sm font-mono text-gray-700">{{ $rps->kode_dokumen }}</p>
+            <p class="text-[11px] text-gray-400 mt-0.5">Kode dokumen digenerate otomatis</p>
         </div>
         <div>
             <label class="block text-xs font-medium text-gray-600 mb-1">Tanggal Penyusunan <span class="text-red-500">*</span></label>
@@ -85,6 +83,21 @@
                    value="{{ old('tanggal_penyusunan', $rps->tanggal_penyusunan?->format('Y-m-d')) }}"
                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 {{ $errors->has('tanggal_penyusunan') ? 'border-red-400' : '' }}">
             @error('tanggal_penyusunan')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">SKS Teori <span class="text-red-500">*</span></label>
+            <input type="number" name="sks_teori" min="0" max="20" required
+                   value="{{ old('sks_teori', $rps->sks_teori ?? $mk->sks_teori) }}"
+                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 {{ $errors->has('sks_teori') ? 'border-red-400' : '' }}">
+            @error('sks_teori')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+        </div>
+        <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">SKS Praktikum <span class="text-red-500">*</span></label>
+            <input type="number" name="sks_praktikum" min="0" max="20" required
+                   value="{{ old('sks_praktikum', $rps->sks_praktikum ?? $mk->sks_praktikum) }}"
+                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 {{ $errors->has('sks_praktikum') ? 'border-red-400' : '' }}">
+            @error('sks_praktikum')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
+            <p class="text-[11px] text-gray-400 mt-0.5">Akan diperbarui ke MK setelah RPS disahkan</p>
         </div>
     </div>
 </div>
@@ -174,6 +187,42 @@
             @empty
                 <p class="text-xs text-gray-400 italic">Belum ada Sub-CPMK.</p>
             @endforelse
+        </div>
+
+        {{-- Korelasi CPMK x Sub-CPMK --}}
+        <div>
+            <p class="text-xs font-bold text-gray-700 mb-2 uppercase tracking-wide">Korelasi CPMK terhadap Sub-CPMK</p>
+            @if ($cpmkList->isNotEmpty() && $subCpmkAll->isNotEmpty())
+            <p class="text-[11px] text-gray-400 mb-2">Pilih satu CPMK untuk setiap kolom Sub-CPMK. Setiap Sub-CPMK hanya dapat berelasi dengan satu CPMK.</p>
+            <div class="overflow-x-auto rounded-lg border border-gray-200">
+                <table class="border-collapse text-xs w-full">
+                    <thead>
+                        <tr>
+                            <th class="border border-gray-200 bg-gray-50 px-2 py-1.5 text-left text-[10px] font-bold text-gray-500 sticky left-0 z-10">CPMK \ Sub-CPMK</th>
+                            @foreach ($subCpmkAll as $sc)
+                                <th class="border border-gray-200 bg-green-50 px-2 py-1.5 text-center text-[10px] font-bold text-green-700 font-mono">{{ $sc->kode_sub_cpmk }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($cpmkList as $cpmk)
+                        <tr>
+                            <th class="border border-gray-200 bg-blue-50 px-2 py-1.5 text-left text-[10px] font-bold text-blue-700 font-mono sticky left-0 z-10">{{ $cpmk->kode_cpmk }}</th>
+                            @foreach ($subCpmkAll as $sc)
+                                <td class="border border-gray-200 text-center px-2 py-1.5">
+                                    <input type="radio" name="sub_cpmk_cpmk[{{ $sc->id }}]" value="{{ $cpmk->id }}"
+                                           {{ $sc->id_cpmk == $cpmk->id ? 'checked' : '' }}
+                                           class="accent-emerald-600 w-3.5 h-3.5 cursor-pointer">
+                                </td>
+                            @endforeach
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @else
+                <p class="text-xs text-gray-400 italic">Belum ada CPMK / Sub-CPMK untuk ditampilkan.</p>
+            @endif
         </div>
     </div>
 </div>

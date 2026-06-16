@@ -32,6 +32,7 @@ Route::middleware(['auth', 'role:kaprodi,tim_kurikulum'])
         Route::post('/master-kategori',                           [\App\Http\Controllers\Kaprodi\MasterKategoriController::class, 'store'])->name('master-kategori.store');
         Route::put('/master-kategori/{masterKategori}',           [\App\Http\Controllers\Kaprodi\MasterKategoriController::class, 'update'])->name('master-kategori.update');
         Route::post('/master-kategori/{masterKategori}/toggle',   [\App\Http\Controllers\Kaprodi\MasterKategoriController::class, 'toggleAktif'])->name('master-kategori.toggle');
+        Route::post('/master-kategori-jenis',                     [\App\Http\Controllers\Kaprodi\MasterKategoriController::class, 'storeJenis'])->name('master-kategori.store-jenis');
     });
 
 // ── Manajemen Kurikulum ───────────────────────────────────────────────────────

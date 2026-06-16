@@ -6,19 +6,17 @@
 @section('content')
 
 {{-- ── Stat cards ── --}}
-<div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+<div class="grid grid-cols-2 xl:grid-cols-3 gap-4 mb-6">
     @php
         $stats = [
             ['label' => 'Total Pengguna',    'value' => $totalUsers,      'sub' => 'aktif di sistem',        'color' => 'blue',   'icon' => 'users'],
             ['label' => 'Kurikulum Aktif',   'value' => $kurikulumAktif,  'sub' => 'periode berjalan',       'color' => 'violet', 'icon' => 'book-open'],
             ['label' => 'RPS Pending',       'value' => $rpsPending,      'sub' => 'menunggu persetujuan',   'color' => 'amber',  'icon' => 'document-check'],
-            ['label' => 'CQI Aktif',         'value' => $cqiAktif,        'sub' => 'perlu tindak lanjut',    'color' => 'emerald','icon' => 'chart-bar'],
         ];
         $colorMap = [
             'blue'    => ['icon' => 'bg-blue-100 text-blue-600',    'val' => 'text-blue-700'],
             'violet'  => ['icon' => 'bg-violet-100 text-violet-600','val' => 'text-violet-700'],
             'amber'   => ['icon' => 'bg-amber-100 text-amber-600',  'val' => 'text-amber-700'],
-            'emerald' => ['icon' => 'bg-emerald-100 text-emerald-600','val' => 'text-emerald-700'],
         ];
     @endphp
 
@@ -105,6 +103,5 @@
     </div>
 
 </div>
-
 
 @endsection

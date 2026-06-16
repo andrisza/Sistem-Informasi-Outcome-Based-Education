@@ -24,11 +24,23 @@ class BahanKajian extends Model
         'referensi',
         'urutan',
         'bidang_keilmuan',
+        'status',
+        'approved_by',
+        'approved_at',
+    ];
+
+    protected $casts = [
+        'approved_at' => 'datetime',
     ];
 
     public function kurikulum(): BelongsTo
     {
         return $this->belongsTo(Kurikulum::class, 'id_kurikulum');
+    }
+
+    public function approvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     public function cplProdi(): BelongsToMany

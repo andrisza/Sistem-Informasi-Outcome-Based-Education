@@ -2,10 +2,8 @@
 
 use App\Http\Controllers\Kaprodi\ActivityLogController;
 use App\Http\Controllers\Kaprodi\EnrollmentMkController;
-use App\Http\Controllers\Kaprodi\CqiController;
 use App\Http\Controllers\Kaprodi\DashboardController;
 use App\Http\Controllers\Kaprodi\PengampuanMkController;
-use App\Http\Controllers\Kaprodi\ReportController;
 use App\Http\Controllers\Kaprodi\RpsApprovalController;
 use App\Http\Controllers\Kaprodi\SemesterAkademikController;
 use App\Http\Controllers\Kaprodi\UserController;
@@ -39,39 +37,19 @@ Route::post('/semester-akademik/{semesterAkademik}/aktifkan', [SemesterAkademikC
     ->name('semester-akademik.aktifkan');
 
 // ── Persetujuan RPS ───────────────────────────────────────────────────────────
-// GET  /kaprodi/rps-approval            →  kaprodi.rps-approval.index
-// GET  /kaprodi/rps-approval/{rps}      →  kaprodi.rps-approval.show
-// POST /kaprodi/rps-approval/{rps}/approve  →  kaprodi.rps-approval.approve
-// POST /kaprodi/rps-approval/{rps}/reject   →  kaprodi.rps-approval.reject
+// GET  /kaprodi/rps-approval                   →  kaprodi.rps-approval.index
+// GET  /kaprodi/rps-approval/{rps}             →  kaprodi.rps-approval.show
+// POST /kaprodi/rps-approval/{rps}/approve     →  kaprodi.rps-approval.approve
+// POST /kaprodi/rps-approval/{rps}/reject      →  kaprodi.rps-approval.reject
+// POST /kaprodi/rps-approval/batch-approve     →  kaprodi.rps-approval.batch-approve
+// POST /kaprodi/rps-approval/batch-draft       →  kaprodi.rps-approval.batch-draft
 Route::prefix('rps-approval')->name('rps-approval.')->group(function () {
     Route::get('/', [RpsApprovalController::class, 'index'])->name('index');
+    Route::post('/batch-approve', [RpsApprovalController::class, 'batchApprove'])->name('batch-approve');
+    Route::post('/batch-draft',   [RpsApprovalController::class, 'batchDraft'])->name('batch-draft');
     Route::get('/{rps}', [RpsApprovalController::class, 'show'])->name('show');
     Route::post('/{rps}/approve', [RpsApprovalController::class, 'approve'])->name('approve');
-    Route::post('/{rps}/reject', [RpsApprovalController::class, 'reject'])->name('reject');
-});
-
-// ── CQI – Evaluasi & Tindak Lanjut ───────────────────────────────────────────
-// GET  /kaprodi/cqi            →  kaprodi.cqi.index
-// GET  /kaprodi/cqi/{log}      →  kaprodi.cqi.show
-// POST /kaprodi/cqi/{log}/setujui  →  kaprodi.cqi.setujui
-// PUT  /kaprodi/cqi/{log}      →  kaprodi.cqi.update  (ubah status)
-Route::prefix('cqi')->name('cqi.')->group(function () {
-    Route::get('/', [CqiController::class, 'index'])->name('index');
-    Route::get('/{log}', [CqiController::class, 'show'])->name('show');
-    Route::post('/{log}/setujui', [CqiController::class, 'setujui'])->name('setujui');
-    Route::patch('/{log}', [CqiController::class, 'update'])->name('update');
-});
-
-// ── Laporan OBE ───────────────────────────────────────────────────────────────
-// GET  /kaprodi/reports                       →  kaprodi.reports.index
-// GET  /kaprodi/reports/cpl/{kurikulum}       →  kaprodi.reports.cpl
-// GET  /kaprodi/reports/pl/{kurikulum}        →  kaprodi.reports.pl
-// GET  /kaprodi/reports/ketercapaian          →  kaprodi.reports.ketercapaian
-Route::prefix('reports')->name('reports.')->group(function () {
-    Route::get('/', [ReportController::class, 'index'])->name('index');
-    Route::get('/cpl/{kurikulum}', [ReportController::class, 'cpl'])->name('cpl');
-    Route::get('/pl/{kurikulum}', [ReportController::class, 'pl'])->name('pl');
-    Route::get('/ketercapaian', [ReportController::class, 'ketercapaian'])->name('ketercapaian');
+    Route::post('/{rps}/reject',  [RpsApprovalController::class, 'reject'])->name('reject');
 });
 
 // ── Pengampuan MK ─────────────────────────────────────────────────────────────
@@ -125,6 +103,7 @@ use App\Http\Controllers\Kaprodi\MasterKategoriController;
 Route::prefix('master-kategori')->name('master-kategori.')->group(function () {
     Route::get('/', [MasterKategoriController::class, 'index'])->name('index');
     Route::post('/', [MasterKategoriController::class, 'store'])->name('store');
+    Route::post('/jenis', [MasterKategoriController::class, 'storeJenis'])->name('store-jenis');
     Route::put('/{masterKategori}', [MasterKategoriController::class, 'update'])->name('update');
     Route::post('/{masterKategori}/toggle', [MasterKategoriController::class, 'toggleAktif'])->name('toggle');
 });

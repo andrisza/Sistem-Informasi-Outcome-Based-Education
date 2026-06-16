@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Kurikulum;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cpmk;
+use App\Models\CplProdi;
 use App\Models\HasilPl;
 use App\Models\KomponenAsesmen;
 use App\Models\Kurikulum;
+use App\Models\MataKuliah;
+use App\Services\ExcelExportService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -43,8 +47,11 @@ class OverviewController extends Controller
             $peta[$cpl->id] = array_fill_keys($semesterRange, []);
         }
 
+        // Build existing: mk_id => [cpl_ids] — untuk matrix editing
+        $existing = [];
         foreach ($mkCplRows as $row) {
             if (!isset($mkById[$row->id_mk])) continue;
+            $existing[$row->id_mk][] = $row->id_cpl;
             $mk  = $mkById[$row->id_mk];
             $smt = $mk->semester;
             if (isset($peta[$row->id_cpl][$smt])) {
@@ -84,8 +91,24 @@ class OverviewController extends Controller
             $pemenuhan[$cpl->id] = $perCpl;
         }
 
+        // Build CPMK map: id_mk → id_cpl → [kode_cpmk...] (unique, sorted)
+        $cpmkForMatrix = Cpmk::where('id_kurikulum', $kurikulum->id)
+            ->select('id_mk', 'id_cpl', 'kode_cpmk')
+            ->orderBy('kode_cpmk')
+            ->get();
+
+        $cpmkMap = [];
+        foreach ($cpmkForMatrix as $row) {
+            if (!isset($cpmkMap[$row->id_mk][$row->id_cpl])) {
+                $cpmkMap[$row->id_mk][$row->id_cpl] = [];
+            }
+            if (!in_array($row->kode_cpmk, $cpmkMap[$row->id_mk][$row->id_cpl])) {
+                $cpmkMap[$row->id_mk][$row->id_cpl][] = $row->kode_cpmk;
+            }
+        }
+
         return view('kurikulum.overview.pemenuhan-cpl', compact(
-            'kurikulum', 'cplList', 'pemenuhan', 'peta', 'semesterRange'
+            'kurikulum', 'cplList', 'pemenuhan', 'peta', 'semesterRange', 'mkList', 'cpmkMap', 'existing'
         ));
     }
 
@@ -103,53 +126,157 @@ class OverviewController extends Controller
             ->orderBy('urutan')
             ->get();
 
+        // Daftar MK untuk modal
+        $mkList = $kurikulum->mataKuliah()
+            ->orderBy('semester')
+            ->orderBy('kode_mk')
+            ->get();
+
         if ($cplList->isEmpty()) {
-            return view('kurikulum.overview.cpl-cpmk-mk', ['kurikulum' => $kurikulum, 'tableData' => []]);
+            return view('kurikulum.overview.cpl-cpmk-mk', [
+                'kurikulum' => $kurikulum,
+                'tableData' => [],
+                'mkList'    => $mkList,
+                'cplList'   => $cplList,
+            ]);
         }
 
-        // 2. Load SEMUA CPMK milik kurikulum ini beserta MK-nya
-        //    Menggunakan eager loading + fresh query tanpa cache
-        $allCpmk = Cpmk::with(['mataKuliah:id,kode_mk,nama_mk,semester,sks_teori,sks_praktikum'])
+        // 2. Load SEMUA CPMK beserta MK-nya
+        $allCpmk = Cpmk::with(['mataKuliah:id,kode_mk,nama_mk,semester,sks_teori,sks_praktikum,sks_total'])
             ->where('id_kurikulum', $kurikulum->id)
             ->whereIn('id_cpl', $cplList->pluck('id'))
             ->orderBy('kode_cpmk')
+            ->orderBy('urutan')
             ->orderBy('id')
             ->get();
 
-        // 3. Build tableData: CPL → [kode_cpmk → {deskripsi, mk_list}]
+        // 3. Build tableData: CPL → CPMK groups (grouped by kode_cpmk)
+        //    Satu baris per kode CPMK; kolom MK menampilkan SEMUA MK yang mengajarkan CPMK tsb.
         $tableData = [];
         foreach ($cplList as $cpl) {
-            // Filter CPMK milik CPL ini
             $cpmkForCpl = $allCpmk->where('id_cpl', $cpl->id);
 
-            $cpmkGroups = [];
-            foreach ($cpmkForCpl->groupBy('kode_cpmk') as $kode => $records) {
-                // Kumpulkan semua MK unik untuk kode CPMK ini
-                $mks = $records
-                    ->map(fn($r) => $r->mataKuliah)
-                    ->filter()                               // hapus null (MK sudah dihapus)
-                    ->unique('id')                           // deduplikasi
-                    ->sortBy([['semester','asc'],['kode_mk','asc']])
-                    ->values();
-
-                $cpmkGroups[] = [
-                    'kode'      => $kode,
-                    'deskripsi' => $records->first()->deskripsi,
-                    'mk_list'   => $mks,
-                ];
-            }
-
-            // Urutkan CPMK groups by kode (CPMK011 < CPMK012 < ...)
-            usort($cpmkGroups, fn($a, $b) => strcmp($a['kode'], $b['kode']));
+            // Group by kode_cpmk → satu entry per kode unik
+            $groups = $cpmkForCpl
+                ->groupBy('kode_cpmk')
+                ->map(function ($records, $kode) {
+                    $first = $records->sortBy('id')->first();
+                    return [
+                        'kode_cpmk'    => $kode,
+                        'deskripsi'    => $first->deskripsi,
+                        'level_bloom'  => $first->level_bloom,
+                        'first_id'     => $first->id,          // untuk link edit
+                        'first_mk_id'  => $first->id_mk,       // untuk link edit
+                        'first_record' => $first,
+                        'records'      => $records->values(),  // semua record (1 per MK)
+                        'mks'          => $records->map(fn ($r) => $r->mataKuliah)
+                                                   ->filter()
+                                                   ->unique('id')
+                                                   ->values(),
+                    ];
+                })
+                ->values();
 
             $tableData[] = [
-                'cpl'       => $cpl,
-                'cpmk_rows' => $cpmkGroups,
-                'row_count' => max(count($cpmkGroups), 1),
+                'cpl'         => $cpl,
+                'cpmk_groups' => $groups,
+                'row_count'   => max($groups->count(), 1),
             ];
         }
 
-        return view('kurikulum.overview.cpl-cpmk-mk', compact('kurikulum', 'tableData'));
+        return view('kurikulum.overview.cpl-cpmk-mk', compact('kurikulum', 'tableData', 'mkList', 'cplList'));
+    }
+
+    public function storeCpmk(Request $request, Kurikulum $kurikulum)
+    {
+        $bloomOptions = ['C1','C2','C3','C4','C5','C6','A1','A2','A3','A4','A5','P1','P2','P3','P4','P5'];
+
+        $validated = $request->validate([
+            'id_cpl'      => 'required|exists:cpl_prodi,id',
+            'id_mk'       => 'required|exists:mata_kuliah,id',
+            'kode_cpmk'   => 'nullable|string|max:50',
+            'deskripsi'   => 'required|string',
+            'level_bloom' => 'nullable|in:' . implode(',', $bloomOptions),
+        ]);
+
+        $mk  = MataKuliah::where('id', $validated['id_mk'])->where('id_kurikulum', $kurikulum->id)->firstOrFail();
+        $cpl = CplProdi::where('id', $validated['id_cpl'])->where('id_kurikulum', $kurikulum->id)->firstOrFail();
+
+        // Mode: tambah MK ke CPMK yang sudah ada (kode dan deskripsi diambil dari existing)
+        $existingKode = $request->input('existing_kode_cpmk');
+        if ($existingKode) {
+            $existing = Cpmk::where('id_kurikulum', $kurikulum->id)
+                ->where('kode_cpmk', $existingKode)
+                ->first();
+            if ($existing) {
+                $validated['kode_cpmk']   = $existing->kode_cpmk;
+                $validated['deskripsi']   = $existing->deskripsi;
+                $validated['level_bloom'] = $existing->level_bloom;
+                $validated['id_cpl']      = $existing->id_cpl;
+            }
+        }
+
+        if (empty($validated['kode_cpmk'])) {
+            $cplSeq    = str_pad($cpl->urutan, 2, '0', STR_PAD_LEFT);
+            $cpmkCount = Cpmk::where('id_cpl', $cpl->id)->where('id_kurikulum', $kurikulum->id)->withTrashed()->count() + 1;
+            $validated['kode_cpmk'] = 'CPMK' . $cplSeq . $cpmkCount;
+        }
+
+        $validated['urutan']       = ($mk->cpmk()->max('urutan') ?? 0) + 1;
+        $validated['id_kurikulum'] = $kurikulum->id;
+
+        // Cegah duplikat MK untuk CPMK yang sama
+        $alreadyExists = Cpmk::where('id_kurikulum', $kurikulum->id)
+            ->where('kode_cpmk', $validated['kode_cpmk'])
+            ->where('id_mk', $validated['id_mk'])
+            ->exists();
+
+        if ($alreadyExists) {
+            return redirect()
+                ->route('kurikulum.overview.cpl-cpmk-mk', $kurikulum)
+                ->with('error', 'MK ini sudah dikaitkan dengan CPMK ' . $validated['kode_cpmk'] . '.');
+        }
+
+        Cpmk::create($validated);
+
+        return redirect()
+            ->route('kurikulum.overview.cpl-cpmk-mk', $kurikulum)
+            ->with('success', 'CPMK berhasil ditambahkan.');
+    }
+
+    public function updateCpmk(Request $request, Kurikulum $kurikulum, Cpmk $cpmk)
+    {
+        abort_unless($cpmk->id_kurikulum === $kurikulum->id, 403);
+
+        $bloomOptions = ['C1','C2','C3','C4','C5','C6','A1','A2','A3','A4','A5','P1','P2','P3','P4','P5'];
+
+        $validated = $request->validate([
+            'kode_cpmk' => 'required|string|max:50',
+            'deskripsi' => 'required|string',
+        ]);
+
+        // Update semua record dengan kode_cpmk yang sama dalam kurikulum ini
+        // (level_bloom tidak diubah — field tidak ditampilkan di form edit)
+        Cpmk::where('id_kurikulum', $kurikulum->id)
+            ->where('kode_cpmk', $cpmk->kode_cpmk)
+            ->update([
+                'kode_cpmk' => $validated['kode_cpmk'],
+                'deskripsi' => $validated['deskripsi'],
+            ]);
+
+        return redirect()
+            ->route('kurikulum.overview.cpl-cpmk-mk', $kurikulum)
+            ->with('success', 'CPMK ' . $validated['kode_cpmk'] . ' berhasil diperbarui.');
+    }
+
+    public function destroyCpmk(Kurikulum $kurikulum, Cpmk $cpmk)
+    {
+        abort_unless($cpmk->id_kurikulum === $kurikulum->id, 403);
+        $cpmk->delete();
+
+        return redirect()
+            ->route('kurikulum.overview.cpl-cpmk-mk', $kurikulum)
+            ->with('success', 'CPMK berhasil dihapus.');
     }
 
     /**
@@ -248,5 +375,113 @@ class OverviewController extends Controller
         return view('kurikulum.overview.organisasi-mk', compact(
             'kurikulum', 'mkList', 'bySemester', 'mkPilihan', 'statPerKategori', 'totalSks'
         ));
+    }
+
+    // ── EXPORT METHODS ────────────────────────────────────────────────────────
+
+    public function exportOrganisasiMk(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $mkList = $kurikulum->mataKuliah()
+            ->orderBy('semester')->orderBy('kategori_mk')->orderBy('kode_mk')->get();
+
+        $green = '16A34A';
+        $header = [
+            ['label' => 'Semester', 'bg' => $green], ['label' => 'Kode MK', 'bg' => $green],
+            ['label' => 'Nama Mata Kuliah', 'bg' => $green], ['label' => 'SKS Teori', 'bg' => $green],
+            ['label' => 'SKS Praktikum', 'bg' => $green], ['label' => 'Total SKS', 'bg' => $green],
+            ['label' => 'Kategori', 'bg' => $green], ['label' => 'Prasyarat', 'bg' => $green],
+            ['label' => 'Konsentrasi', 'bg' => $green],
+        ];
+
+        $rows = [];
+        foreach ($mkList as $mk) {
+            $rows[] = [
+                $mk->semester, $mk->kode_mk, $mk->nama_mk,
+                $mk->sks_teori ?? 0, $mk->sks_praktikum ?? 0,
+                ($mk->sks_teori ?? 0) + ($mk->sks_praktikum ?? 0),
+                $mk->kategori_mk ?? '—', $mk->kode_prasyarat ?? '—', $mk->konsentrasi ?? '—',
+            ];
+        }
+
+        return $excel->download("organisasi-mk-{$kurikulum->kode}.xlsx", [
+            'Organisasi MK' => ['headerRows' => [$header], 'rows' => $rows, 'colWidths' => [10,14,45,10,13,10,14,14,20]],
+        ]);
+    }
+
+    public function exportPemenuhanCpl(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $cplList = $kurikulum->cplProdi()->orderBy('urutan')->get();
+        $mkList  = $kurikulum->mataKuliah()->orderBy('semester')->orderBy('kode_mk')->get();
+
+        $mkCplRows = DB::table('pivot_mk_cpl')
+            ->whereIn('id_mk', $mkList->pluck('id'))
+            ->whereIn('id_cpl', $cplList->pluck('id'))
+            ->select('id_mk', 'id_cpl')->distinct()->get();
+
+        $mkById = $mkList->keyBy('id');
+        $byMk   = $mkCplRows->groupBy('id_mk');
+
+        $blue = '2563EB';
+        $header = [
+            ['label' => 'Kode CPL', 'bg' => $blue], ['label' => 'Deskripsi CPL', 'bg' => $blue],
+            ['label' => 'Kode MK', 'bg' => $blue], ['label' => 'Nama MK', 'bg' => $blue],
+            ['label' => 'Semester', 'bg' => $blue],
+        ];
+
+        $rows = [];
+        foreach ($cplList as $cpl) {
+            $linked = $mkCplRows->where('id_cpl', $cpl->id);
+            if ($linked->isEmpty()) {
+                $rows[] = [$cpl->kode_cpl, $cpl->deskripsi, '—', '—', '—'];
+            } else {
+                foreach ($linked as $row) {
+                    $mk = $mkById[$row->id_mk] ?? null;
+                    $rows[] = [$cpl->kode_cpl, $cpl->deskripsi, $mk?->kode_mk ?? '—', $mk?->nama_mk ?? '—', $mk?->semester ?? '—'];
+                }
+            }
+        }
+
+        return $excel->download("pemenuhan-cpl-{$kurikulum->kode}.xlsx", [
+            'Pemenuhan CPL' => ['headerRows' => [$header], 'rows' => $rows, 'colWidths' => [12,60,14,40,10]],
+        ]);
+    }
+
+    public function exportCplCpmkMk(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $cplList = $kurikulum->cplProdi()
+            ->orderByRaw("FIELD(kategori,'Sikap','Keterampilan Umum','Keterampilan Khusus','Pengetahuan')")
+            ->orderBy('urutan')->get();
+
+        $allCpmk = Cpmk::with(['mataKuliah:id,kode_mk,nama_mk'])
+            ->where('id_kurikulum', $kurikulum->id)
+            ->whereIn('id_cpl', $cplList->pluck('id'))
+            ->orderBy('kode_cpmk')->get();
+
+        $blue = '1D4ED8';
+        $header = [
+            ['label' => 'Kode CPL', 'bg' => $blue], ['label' => 'Kategori CPL', 'bg' => $blue],
+            ['label' => 'Deskripsi CPL', 'bg' => $blue], ['label' => 'Kode CPMK', 'bg' => $blue],
+            ['label' => 'Deskripsi CPMK', 'bg' => $blue], ['label' => 'Mata Kuliah', 'bg' => $blue],
+        ];
+
+        $rows = [];
+        foreach ($cplList as $cpl) {
+            $groups = $allCpmk->where('id_cpl', $cpl->id)->groupBy('kode_cpmk');
+            if ($groups->isEmpty()) {
+                $rows[] = [$cpl->kode_cpl, $cpl->kategori ?? '—', $cpl->deskripsi, '—', '—', '—'];
+            } else {
+                foreach ($groups as $kode => $records) {
+                    $mks = $records->map(fn ($r) => $r->mataKuliah?->kode_mk)->filter()->unique()->implode(', ');
+                    $rows[] = [
+                        $cpl->kode_cpl, $cpl->kategori ?? '—', $cpl->deskripsi,
+                        $kode, $records->first()->deskripsi, $mks ?: '—',
+                    ];
+                }
+            }
+        }
+
+        return $excel->download("peta-cpl-cpmk-mk-{$kurikulum->kode}.xlsx", [
+            'Peta CPL-CPMK-MK' => ['headerRows' => [$header], 'rows' => $rows, 'colWidths' => [12,20,60,14,60,20]],
+        ]);
     }
 }

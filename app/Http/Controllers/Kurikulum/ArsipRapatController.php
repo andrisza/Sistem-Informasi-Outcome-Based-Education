@@ -7,63 +7,47 @@ use App\Models\ArsipRapat;
 use App\Models\Kurikulum;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class ArsipRapatController extends Controller
 {
-    public function index(Request $request, Kurikulum $kurikulum)
+    public function index(Kurikulum $kurikulum)
     {
-        $query = $kurikulum->arsipRapat()
-            ->with(['periode', 'pembuat'])
-            ->orderBy('tanggal_rapat', 'desc');
+        $hasAny    = $kurikulum->arsipRapat()->exists();
+        $arsipList = $kurikulum->arsipRapat()
+            ->with(['pembuat'])
+            ->orderBy('tanggal_rapat', 'desc')
+            ->paginate(15);
 
-        if ($request->filled('jenis')) {
-            $query->where('jenis_rapat', $request->jenis);
-        }
-
-        $arsipList = $query->paginate(15)->withQueryString();
-
-        // Hitung per jenis untuk summary stats (tanpa filter aktif)
-        $jenisCounts = $kurikulum->arsipRapat()
-            ->selectRaw('jenis_rapat, count(*) as total')
-            ->groupBy('jenis_rapat')
-            ->pluck('total', 'jenis_rapat');
-
-        return view('kurikulum.arsip-rapat.index', compact('kurikulum', 'arsipList', 'jenisCounts'));
+        return view('kurikulum.arsip-rapat.index', compact('kurikulum', 'arsipList', 'hasAny'));
     }
 
     public function create(Kurikulum $kurikulum)
     {
-        $periodeList = $kurikulum->periode()->orderBy('nama_periode')->get();
-        $jenisOptions = [
-            'pleno_kurikulum'   => 'Pleno Kurikulum',
-            'rapat_tim_kecil'   => 'Rapat Tim Kecil',
-            'rapat_stakeholder' => 'Rapat Stakeholder',
-            'rapat_evaluasi'    => 'Rapat Evaluasi',
-            'rapat_cqi'         => 'Rapat CQI',
-            'rapat_lainnya'     => 'Rapat Lainnya',
-        ];
-
-        return view('kurikulum.arsip-rapat.create', compact('kurikulum', 'periodeList', 'jenisOptions'));
+        return view('kurikulum.arsip-rapat.create', compact('kurikulum'));
     }
 
     public function store(Request $request, Kurikulum $kurikulum)
     {
         $validated = $request->validate([
-            'id_periode'    => 'nullable|exists:periode_kurikulum,id',
             'judul_rapat'   => 'required|string|max:255',
-            'jenis_rapat'   => 'required|in:pleno_kurikulum,rapat_tim_kecil,rapat_stakeholder,rapat_evaluasi,rapat_cqi,rapat_lainnya',
             'tanggal_rapat' => 'required|date',
             'tempat'        => 'nullable|string|max:255',
-            'agenda'        => 'nullable|string',
             'notulen'       => 'nullable|string',
-            'kesimpulan'    => 'nullable|string',
-            'tindak_lanjut' => 'nullable|string',
+            'bukti_rapat'   => 'nullable|array|max:10',
+            'bukti_rapat.*' => 'file|max:20480|extensions:pdf,docx,png,jpg,jpeg,heic,heif',
         ]);
 
-        $validated['id_kurikulum'] = $kurikulum->id;
-        $validated['dibuat_oleh']  = Auth::id();
+        $arsip = ArsipRapat::create([
+            'id_kurikulum'  => $kurikulum->id,
+            'dibuat_oleh'   => Auth::id(),
+            'judul_rapat'   => $validated['judul_rapat'],
+            'tanggal_rapat' => $validated['tanggal_rapat'],
+            'tempat'        => $validated['tempat'] ?? null,
+            'notulen'       => $validated['notulen'] ?? null,
+        ]);
 
-        ArsipRapat::create($validated);
+        $this->storeFiles($request, $arsip);
 
         return redirect()
             ->route('kurikulum.arsip-rapat.index', $kurikulum)
@@ -72,52 +56,89 @@ class ArsipRapatController extends Controller
 
     public function show(Kurikulum $kurikulum, ArsipRapat $arsipRapat)
     {
-        $arsipRapat->load(['periode', 'pembuat']);
+        $arsipRapat->load(['pembuat']);
         return view('kurikulum.arsip-rapat.show', compact('kurikulum', 'arsipRapat'));
     }
 
     public function edit(Kurikulum $kurikulum, ArsipRapat $arsipRapat)
     {
-        $periodeList = $kurikulum->periode()->orderBy('nama_periode')->get();
-        $jenisOptions = [
-            'pleno_kurikulum'   => 'Pleno Kurikulum',
-            'rapat_tim_kecil'   => 'Rapat Tim Kecil',
-            'rapat_stakeholder' => 'Rapat Stakeholder',
-            'rapat_evaluasi'    => 'Rapat Evaluasi',
-            'rapat_cqi'         => 'Rapat CQI',
-            'rapat_lainnya'     => 'Rapat Lainnya',
-        ];
-
-        return view('kurikulum.arsip-rapat.edit', compact('kurikulum', 'arsipRapat', 'periodeList', 'jenisOptions'));
+        return view('kurikulum.arsip-rapat.edit', compact('kurikulum', 'arsipRapat'));
     }
 
     public function update(Request $request, Kurikulum $kurikulum, ArsipRapat $arsipRapat)
     {
         $validated = $request->validate([
-            'id_periode'    => 'nullable|exists:periode_kurikulum,id',
             'judul_rapat'   => 'required|string|max:255',
-            'jenis_rapat'   => 'required|in:pleno_kurikulum,rapat_tim_kecil,rapat_stakeholder,rapat_evaluasi,rapat_cqi,rapat_lainnya',
             'tanggal_rapat' => 'required|date',
             'tempat'        => 'nullable|string|max:255',
-            'agenda'        => 'nullable|string',
             'notulen'       => 'nullable|string',
-            'kesimpulan'    => 'nullable|string',
-            'tindak_lanjut' => 'nullable|string',
+            'bukti_rapat'   => 'nullable|array|max:10',
+            'bukti_rapat.*' => 'file|max:20480|extensions:pdf,docx,png,jpg,jpeg,heic,heif',
+            'delete_files'  => 'nullable|array',
+            'delete_files.*'=> 'integer',
         ]);
 
-        $arsipRapat->update($validated);
+        // Hapus file yang ditandai
+        $existing   = $arsipRapat->file_lampiran ?? [];
+        $deleteIdxs = array_map('intval', $request->input('delete_files', []));
+        $kept = [];
+        foreach ($existing as $i => $file) {
+            if (in_array($i, $deleteIdxs, true)) {
+                Storage::disk('public')->delete($file['path']);
+            } else {
+                $kept[] = $file;
+            }
+        }
+
+        // Upload file baru
+        if ($request->hasFile('bukti_rapat')) {
+            foreach ($request->file('bukti_rapat') as $file) {
+                $path   = $file->store("arsip-rapat/{$arsipRapat->id}", 'public');
+                $kept[] = ['path' => $path, 'name' => $file->getClientOriginalName()];
+            }
+        }
+
+        $arsipRapat->update([
+            'judul_rapat'   => $validated['judul_rapat'],
+            'tanggal_rapat' => $validated['tanggal_rapat'],
+            'tempat'        => $validated['tempat'] ?? null,
+            'notulen'       => $validated['notulen'] ?? null,
+            'file_lampiran' => $kept ?: null,
+        ]);
 
         return redirect()
-            ->route('kurikulum.arsip-rapat.index', $kurikulum)
+            ->route('kurikulum.arsip-rapat.show', [$kurikulum, $arsipRapat])
             ->with('success', 'Arsip rapat berhasil diperbarui.');
     }
 
     public function destroy(Kurikulum $kurikulum, ArsipRapat $arsipRapat)
     {
+        if ($arsipRapat->file_lampiran) {
+            foreach ($arsipRapat->file_lampiran as $file) {
+                Storage::disk('public')->delete($file['path']);
+            }
+            Storage::disk('public')->deleteDirectory("arsip-rapat/{$arsipRapat->id}");
+        }
+
         $arsipRapat->delete();
 
         return redirect()
             ->route('kurikulum.arsip-rapat.index', $kurikulum)
             ->with('success', 'Arsip rapat berhasil dihapus.');
+    }
+
+    private function storeFiles(Request $request, ArsipRapat $arsip): void
+    {
+        if (! $request->hasFile('bukti_rapat')) return;
+
+        $files = [];
+        foreach ($request->file('bukti_rapat') as $file) {
+            $path    = $file->store("arsip-rapat/{$arsip->id}", 'public');
+            $files[] = ['path' => $path, 'name' => $file->getClientOriginalName()];
+        }
+
+        if ($files) {
+            $arsip->update(['file_lampiran' => $files]);
+        }
     }
 }

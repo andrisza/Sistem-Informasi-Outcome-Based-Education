@@ -84,47 +84,50 @@
             // Ikhtisar — halaman ringkasan utama kurikulum
             ['label' => 'Ikhtisar', 'route' => 'kurikulum.show', 'icon' => 'grid', 'params' => [$kurikulumCtx]],
 
-            // Data OBE — komponen penyusun kurikulum
+            // Data OBE — urutan alur: CPL SN-Dikti → CPL Prodi → Pemetaan SN-P → PL → Bahan Kajian
             ['group' => 'Data OBE', 'icon' => 'book-open', 'children' => [
-                ['label' => 'CPL SN-Dikti',   'route' => 'kurikulum.cpl-sndikti.index',  'icon' => 'academic-cap', 'params' => [$kurikulumCtx]],
-                ['label' => 'Profil Lulusan', 'route' => 'kurikulum.pl.index',           'icon' => 'academic-cap',  'params' => [$kurikulumCtx]],
-                ['label' => 'CPL Prodi',      'route' => 'kurikulum.cpl-prodi.index',    'icon' => 'check-circle',  'params' => [$kurikulumCtx]],
-                ['label' => 'Bahan Kajian',   'route' => 'kurikulum.bahan-kajian.index', 'icon' => 'book-open',     'params' => [$kurikulumCtx]],
-                ['label' => 'Mata Kuliah',    'route' => 'kurikulum.mata-kuliah.index',  'icon' => 'document',      'params' => [$kurikulumCtx]],
-                ['label' => 'Organisasi MK',  'route' => 'kurikulum.organisasi-mk',      'icon' => 'grid',          'params' => [$kurikulumCtx]],
+                ['label' => 'CPL SN-Dikti',          'route' => 'kurikulum.cpl-sndikti.index',  'icon' => 'academic-cap',  'params' => [$kurikulumCtx]],
+                ['label' => 'CPL Prodi',             'route' => 'kurikulum.cpl-prodi.index',    'icon' => 'check-circle',  'params' => [$kurikulumCtx]],
+                ['label' => 'Pemetaan CPL-SN↔CPL-P', 'route' => 'kurikulum.pivot.cplsn-cplp',  'icon' => 'table',         'params' => [$kurikulumCtx]],
+                ['label' => 'Profil Lulusan',        'route' => 'kurikulum.pl.index',           'icon' => 'academic-cap',  'params' => [$kurikulumCtx]],
+                ['label' => 'Bahan Kajian',          'route' => 'kurikulum.bahan-kajian.index', 'icon' => 'book-open',     'params' => [$kurikulumCtx]],
             ]],
 
-            // Peta & Matriks — visualisasi hubungan antar komponen OBE
+            // Peta & Matriks — urutan sesuai alur kurikulum OBE
             ['group' => 'Peta & Matriks', 'icon' => 'map', 'children' => [
-                ['label' => 'Matriks CPL-SN↔CPL-P','route' => 'kurikulum.pivot.cplsn-cplp','icon' => 'table', 'params' => [$kurikulumCtx]],
-                ['label' => 'Matriks PL↔CPL',    'route' => 'kurikulum.pivot.pl-cpl',    'icon' => 'map',   'params' => [$kurikulumCtx]],
-                ['label' => 'Matriks CPL↔BK',    'route' => 'kurikulum.pivot.cpl-bk',    'icon' => 'table', 'params' => [$kurikulumCtx]],
-                ['label' => 'Matriks MK↔BK',     'route' => 'kurikulum.pivot.mk-bk',     'icon' => 'table', 'params' => [$kurikulumCtx]],
-                ['label' => 'Matriks MK↔CPL',    'route' => 'kurikulum.pivot.mk-cpl',    'icon' => 'table', 'params' => [$kurikulumCtx]],
-                ['label' => 'Matriks CPL↔CPMK',  'route' => 'kurikulum.pivot.cpl-cpmk',      'icon' => 'table', 'params' => [$kurikulumCtx]],
-                ['label' => 'Matriks CPL↔BK↔MK', 'route' => 'kurikulum.pivot.cpl-bk-mk',    'icon' => 'grid',  'params' => [$kurikulumCtx]],
-                ['label' => 'Peta CPL–CPMK–MK',  'route' => 'kurikulum.overview.cpl-cpmk-mk','icon' => 'table', 'params' => [$kurikulumCtx]],
+                ['label' => 'Matriks CPL↔PL',        'route' => 'kurikulum.pivot.pl-cpl',         'icon' => 'map',   'params' => [$kurikulumCtx]],
+                ['label' => 'Matriks CPL↔BK',        'route' => 'kurikulum.pivot.cpl-bk',         'icon' => 'table', 'params' => [$kurikulumCtx]],
+                ['label' => 'Matriks BK↔MK',         'route' => 'kurikulum.pivot.mk-bk',          'icon' => 'table', 'params' => [$kurikulumCtx]],
+                ['label' => 'Matriks CPL↔MK',        'route' => 'kurikulum.pivot.mk-cpl',         'icon' => 'table', 'params' => [$kurikulumCtx]],
+                ['label' => 'Matriks CPL↔BK↔MK',    'route' => 'kurikulum.pivot.cpl-bk-mk',      'icon' => 'grid',  'params' => [$kurikulumCtx]],
+                ['label' => 'Susunan Mata Kuliah',   'route' => 'kurikulum.mata-kuliah.index',    'icon' => 'document','params' => [$kurikulumCtx]],
+                ['label' => 'Organisasi Mata Kuliah','route' => 'kurikulum.organisasi-mk',         'icon' => 'grid',   'params' => [$kurikulumCtx]],
+                ['label' => 'Peta Pemenuhan CPL',    'route' => 'kurikulum.overview.pemenuhan-cpl','icon' => 'map',   'params' => [$kurikulumCtx]],
+                ['label' => 'Peta CPL–CPMK–MK',     'route' => 'kurikulum.overview.cpl-cpmk-mk',  'icon' => 'table', 'params' => [$kurikulumCtx]],
             ]],
 
             // Asesmen & Penilaian
             ['group' => 'Asesmen', 'icon' => 'calculator', 'children' => [
-                ['label' => 'Peta CPL–CPMK–Semester', 'route' => 'kurikulum.penilaian.peta-semester',   'icon' => 'table',        'params' => [$kurikulumCtx]],
+                ['label' => 'CPL-CPMK-MK Semester',   'route' => 'kurikulum.penilaian.peta-semester',   'icon' => 'table',        'params' => [$kurikulumCtx]],
                 ['label' => 'Peta MK–CPMK–Sub-CPMK',  'route' => 'kurikulum.penilaian.mk-cpmk-subcpmk','icon' => 'document',     'params' => [$kurikulumCtx]],
-                ['label' => 'Teknik Penilaian',        'route' => 'kurikulum.penilaian.teknik',          'icon' => 'check-circle', 'params' => [$kurikulumCtx]],
+                ['label' => 'Teknik Penilaian CPMK',   'route' => 'kurikulum.penilaian.teknik',          'icon' => 'check-circle', 'params' => [$kurikulumCtx]],
                 ['label' => 'Tahap & Mekanisme',       'route' => 'kurikulum.penilaian.tahap',           'icon' => 'document',     'params' => [$kurikulumCtx]],
-                ['label' => 'Bobot Penilaian',         'route' => 'kurikulum.penilaian.bobot',           'icon' => 'calculator',   'params' => [$kurikulumCtx]],
+                ['label' => 'Bobot Penilaian CPL',     'route' => 'kurikulum.penilaian.bobot',           'icon' => 'calculator',   'params' => [$kurikulumCtx]],
+                ['label' => 'Bobot Penilaian MK',      'route' => 'kurikulum.penilaian.bobot-mk',        'icon' => 'calculator',   'params' => [$kurikulumCtx]],
                 ['label' => 'Rumusan Nilai Akhir MK',  'route' => 'kurikulum.penilaian.rumusan',         'icon' => 'chart-bar',    'params' => [$kurikulumCtx]],
                 ['label' => 'Rumusan Nilai Akhir CPL', 'route' => 'kurikulum.penilaian.rumusan-cpl',     'icon' => 'chart-bar',    'params' => [$kurikulumCtx]],
+                ['label' => 'Rekap Nilai per MK',      'route' => 'kurikulum.penilaian.rekap-nilai',     'icon' => 'document-report', 'params' => [$kurikulumCtx]],
+            ]],
+
+            // Evaluasi & Laporan — proses penilaian & evaluasi CPL per CPL, dan assessment lintas CPL/MK
+            ['group' => 'Evaluasi & Laporan', 'icon' => 'document-report', 'children' => [
+                ['label' => 'Proses Penilaian dan Evaluasi CPL', 'route' => 'kurikulum.penilaian.evaluasi-cpl', 'icon' => 'document-report', 'params' => [$kurikulumCtx]],
+                ['label' => 'Assessment terhadap CPL dan MK', 'route' => 'kurikulum.penilaian.rekap-cpl',   'icon' => 'table',        'params' => [$kurikulumCtx]],
             ]],
 
             // Administrasi — arsip dan pengelolaan tim
             ['group' => 'Administrasi', 'icon' => 'cog', 'children' => [
                 ['label' => 'Arsip Rapat',        'route' => 'kurikulum.arsip-rapat.index', 'icon' => 'meeting',  'params' => [$kurikulumCtx]],
-                ['label' => 'Tim Kurikulum',      'route' => 'kurikulum.tim.index',         'icon' => 'users',    'params' => [$kurikulumCtx]],
-                ['label' => 'Periode',            'route' => 'kurikulum.periode.index',     'icon' => 'calendar', 'params' => [$kurikulumCtx]],
-                ['label' => 'Lesson Learned',     'route' => 'kurikulum.lesson-learned.index', 'icon' => 'document', 'params' => [$kurikulumCtx]],
-                ['label' => 'Checklist LEDIK',    'route' => 'kurikulum.ledik.index',       'icon' => 'check-circle', 'params' => [$kurikulumCtx]],
-                ['label' => 'Distribusi Dokumen', 'route' => 'kurikulum.distribusi.index',  'icon' => 'collection',   'params' => [$kurikulumCtx]],
                 ['label' => 'Generate PDF',       'route' => 'kurikulum.generate-pdf',      'icon' => 'document',     'params' => [$kurikulumCtx]],
             ]],
         ];
@@ -144,10 +147,6 @@
             ['label' => 'Kurikulum',       'href'  => route('kurikulum.index'),                        'icon' => 'book-open'],
             ['label' => 'Arsip Kurikulum', 'href'  => route('kurikulum.index', ['status' => 'arsip']), 'icon' => 'archive'],
             ['label' => 'Persetujuan RPS', 'route' => 'kaprodi.rps-approval.index',                    'icon' => 'document-check'],
-        ]],
-        ['group' => 'Evaluasi & Laporan', 'icon' => 'chart-bar', 'children' => [
-            ['label' => 'Evaluasi CQI',  'route' => 'kaprodi.cqi.index',     'icon' => 'chart-bar'],
-            ['label' => 'Laporan OBE',   'route' => 'kaprodi.reports.index', 'icon' => 'document-report'],
         ]],
         ['group' => 'Sistem', 'icon' => 'cog', 'children' => [
             ['label' => 'Audit Trail',    'route' => 'kaprodi.activity-log.index',    'icon' => 'clock'],

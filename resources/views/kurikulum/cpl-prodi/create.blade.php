@@ -21,38 +21,39 @@
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
         <div class="px-6 py-5 space-y-4">
 
+            {{-- Kode CPL (auto-generate, opsional override) --}}
             <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Kategori <span class="text-red-500">*</span></label>
-                <select name="kategori"
-                        class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('kategori') border-red-400 @enderror">
-                    <option value="">— Pilih Kategori —</option>
-                    @foreach ($kategoriOptions as $k)
-                        <option value="{{ $k }}" {{ old('kategori') == $k ? 'selected' : '' }}>{{ $k }}</option>
-                    @endforeach
-                </select>
-                @error('kategori') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                <label class="block text-xs font-medium text-gray-700 mb-1">Kode CPL</label>
+                <input type="text" name="kode_cpl"
+                       value="{{ old('kode_cpl', $nextKode) }}"
+                       class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500 @error('kode_cpl') border-red-400 @enderror"
+                       placeholder="cth: CPL01">
+                <p class="text-xs text-gray-400 mt-1">Dikosongkan untuk generate otomatis.</p>
+                @error('kode_cpl') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
             </div>
 
+            {{-- Deskripsi --}}
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Deskripsi <span class="text-red-500">*</span></label>
                 <textarea name="deskripsi" rows="5"
-                          class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('deskripsi') border-red-400 @enderror"
+                          class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 @error('deskripsi') border-red-400 @enderror"
                           placeholder="Deskripsi CPL Prodi...">{{ old('deskripsi') }}</textarea>
                 @error('deskripsi') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
             </div>
 
-            <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Referensi</label>
-                <textarea name="referensi" rows="2"
-                          class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="cth: IS2020 A3.1, SKKNI, IABEE...">{{ old('referensi') }}</textarea>
+            {{-- Info referensi --}}
+            <div class="rounded-lg bg-blue-50 border border-blue-100 px-4 py-3 text-xs text-blue-700 flex items-start gap-2">
+                <svg class="w-4 h-4 shrink-0 mt-0.5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span><strong>Referensi SN-Dikti</strong> akan terisi otomatis setelah CPL Prodi ini dipetakan ke CPL SN-Dikti melalui halaman <em>Pemetaan CPL-SN↔CPL-P</em>.</span>
             </div>
 
         </div>
 
         <div class="px-6 py-4 flex items-center gap-3">
             <button type="submit"
-                    class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-5 py-2 rounded-lg transition-colors">
+                    style="background:#7C3AED;color:#fff;font-size:14px;font-weight:600;padding:8px 20px;border-radius:8px;border:none;cursor:pointer">
                 Simpan
             </button>
             <a href="{{ route('kurikulum.cpl-prodi.index', $kurikulum) }}"

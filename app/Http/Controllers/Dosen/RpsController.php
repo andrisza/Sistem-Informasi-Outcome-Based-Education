@@ -8,6 +8,7 @@ use App\Models\PengampuanMk;
 use App\Models\RpsHeader;
 use App\Models\RpsPertemuan;
 use App\Models\SemesterAkademik;
+use App\Models\SubCpmk;
 use App\Models\User;
 use Illuminate\Http\Request;
 
@@ -54,7 +55,6 @@ class RpsController extends Controller
             'id_mk'              => 'required|integer|exists:mata_kuliah,id',
             'id_semester'        => 'required|integer|exists:semester_akademik,id',
             'tanggal_penyusunan' => 'required|date',
-            'kode_dokumen'       => 'nullable|string|max:100',
         ]);
 
         $dosenId = auth()->id();
@@ -68,11 +68,9 @@ class RpsController extends Controller
             return back()->withErrors(['id_mk' => 'Anda tidak mengampu MK ini di semester tersebut.'])->withInput();
         }
 
-        if (empty($validated['kode_dokumen'])) {
-            $mk  = MataKuliah::find($validated['id_mk']);
-            $sem = SemesterAkademik::find($validated['id_semester']);
-            $validated['kode_dokumen'] = $this->generateKodeRps($mk, $sem);
-        }
+        $mk  = MataKuliah::find($validated['id_mk']);
+        $sem = SemesterAkademik::find($validated['id_semester']);
+        $validated['kode_dokumen'] = $this->generateKodeRps($mk, $sem);
 
         $existing = RpsHeader::where('id_mk', $validated['id_mk'])
             ->where('id_semester', $validated['id_semester'])
@@ -167,7 +165,8 @@ class RpsController extends Controller
 
         $validated = $request->validate([
             'tanggal_penyusunan'    => 'required|date',
-            'kode_dokumen'          => 'required|string|max:100',
+            'sks_teori'             => 'required|integer|min:0|max:20',
+            'sks_praktikum'         => 'required|integer|min:0|max:20',
             'nama_perguruan_tinggi' => 'nullable|string|max:150',
             'nama_fakultas'         => 'nullable|string|max:150',
             'id_koordinator_bk'     => 'nullable|integer|exists:users,id',
@@ -179,6 +178,24 @@ class RpsController extends Controller
         ]);
 
         $rps->update($validated);
+
+        // ── Update korelasi Sub-CPMK → CPMK ───────────────────────────────
+        $korInput = $request->input('sub_cpmk_cpmk', []);
+        if (!empty($korInput)) {
+            $rps->load('mataKuliah.cpmk.subCpmk');
+            $mk         = $rps->mataKuliah;
+            $cpmkIds    = $mk?->cpmk?->pluck('id')->all() ?? [];
+            $subCpmkIds = $mk?->cpmk?->flatMap(fn($c) => $c->subCpmk)->pluck('id')->all() ?? [];
+
+            foreach ($korInput as $subCpmkId => $cpmkId) {
+                $subCpmkId = (int) $subCpmkId;
+                $cpmkId    = (int) $cpmkId;
+                if (!in_array($subCpmkId, $subCpmkIds) || !in_array($cpmkId, $cpmkIds)) {
+                    continue;
+                }
+                SubCpmk::where('id', $subCpmkId)->update(['id_cpmk' => $cpmkId]);
+            }
+        }
 
         // ── Simpan pertemuan (minggu 1–16) ─────────────────────────────────
         // Hanya simpan baris yang memiliki setidaknya satu field terisi.

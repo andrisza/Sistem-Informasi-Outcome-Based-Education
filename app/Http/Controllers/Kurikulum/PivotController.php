@@ -10,9 +10,11 @@ use App\Models\CplSndikti;
 use App\Models\Kurikulum;
 use App\Models\MataKuliah;
 use App\Models\Pl;
+use App\Services\ExcelExportService;
 use App\Services\MatrixConsistencyService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class PivotController extends Controller
@@ -33,7 +35,8 @@ class PivotController extends Controller
         }
 
         $data = $request->validate([
-            'table'   => 'required|string|in:pivot_pl_cpl,pivot_cplsn_cplp,pivot_cpl_bk,pivot_mk_bk,pivot_mk_cpl,pivot_cpl_bk_mk,pivot_cpl_cpmk',
+            // pivot_cpl_bk_mk dihapus dari sini — matriks ini auto-derived, tidak boleh diedit manual
+            'table'   => 'required|string|in:pivot_pl_cpl,pivot_cplsn_cplp,pivot_cpl_bk,pivot_mk_bk,pivot_mk_cpl,pivot_cpl_cpmk',
             'keys'    => 'required|array',
             'keys.*'  => 'required|integer|min:1',
             'checked' => 'required|boolean',
@@ -44,8 +47,9 @@ class PivotController extends Controller
             return response()->json(['ok' => false, 'message' => 'Data tidak valid untuk kurikulum ini.'], 422);
         }
 
-        $derived = false;
-        DB::transaction(function () use ($data, &$derived, $kurikulum) {
+        $derived       = false;
+        $cplProdiToSync = []; // id CPL Prodi yang referensinya perlu disinkronkan
+        DB::transaction(function () use ($data, &$derived, &$cplProdiToSync, $kurikulum) {
             // Special handling untuk pivot_mk_cpl (composite key butuh id_cpmk).
             // Frontend hanya kirim (id_mk, id_cpl); kita lookup/auto-create CPMK.
             if ($data['table'] === 'pivot_mk_cpl' && isset($data['keys']['id_mk'], $data['keys']['id_cpl']) && !isset($data['keys']['id_cpmk'])) {
@@ -110,12 +114,22 @@ class PivotController extends Controller
                 }
                 $derived = true;
             }
+
+            // Tandai CPL Prodi yang perlu disinkronkan referensinya
+            if ($data['table'] === 'pivot_cplsn_cplp' && isset($data['keys']['id_cpl_prodi'])) {
+                $cplProdiToSync[] = (int) $data['keys']['id_cpl_prodi'];
+            }
         });
 
         // Dispatch SETELAH transaksi berhasil commit — job tidak perlu dirollback
         // jika transaksi gagal karena belum pernah dikirim.
         if ($derived) {
             SyncMkCplJob::dispatch($kurikulum->id);
+        }
+
+        // Sinkronkan referensi CPL Prodi dari pemetaan CPL SN-Dikti
+        if (!empty($cplProdiToSync)) {
+            $this->syncCplProdiReferensi($cplProdiToSync);
         }
 
         return response()->json([
@@ -224,6 +238,69 @@ class PivotController extends Controller
         };
     }
 
+    /**
+     * Bangun struktur sheet (headerRows + rows + colWidths) untuk matriks checkbox
+     * sederhana (baris × kolom, isi = "✓"/"") yang dipakai oleh export Phase 2.
+     *
+     * @param Collection $rowList        Baris matriks (model dengan properti 'id')
+     * @param Collection $colList        Kolom matriks (model dengan properti 'id')
+     * @param Collection $existing       [rowId => array kolomId yang tercentang]
+     * @param \Closure   $rowLabel       fn($row) => string label baris
+     * @param \Closure   $colLabel       fn($col) => string label kolom
+     * @param string     $cornerLabel    Label sel pojok kiri atas
+     * @param string     $bg             Warna background header (hex tanpa #)
+     * @param array      $extraRowHeaders Label kolom tambahan setelah label baris (opsional)
+     * @param \Closure|null $extraRowValues fn($row) => array nilai untuk $extraRowHeaders
+     */
+    private function buildMatrixSheet(
+        Collection $rowList,
+        Collection $colList,
+        Collection $existing,
+        \Closure $rowLabel,
+        \Closure $colLabel,
+        string $cornerLabel,
+        string $bg,
+        array $extraRowHeaders = [],
+        ?\Closure $extraRowValues = null,
+    ): array {
+        $headerRow = [['label' => $cornerLabel, 'bg' => $bg]];
+        foreach ($extraRowHeaders as $extraHeader) {
+            $headerRow[] = ['label' => $extraHeader, 'bg' => $bg];
+        }
+        foreach ($colList as $col) {
+            $headerRow[] = ['label' => $colLabel($col), 'bg' => $bg];
+        }
+
+        $rows = [];
+        foreach ($rowList as $row) {
+            $line = [$rowLabel($row)];
+            if ($extraRowValues) {
+                foreach ($extraRowValues($row) as $value) {
+                    $line[] = $value;
+                }
+            }
+            foreach ($colList as $col) {
+                $checked = in_array($col->id, $existing[$row->id] ?? []);
+                $line[] = $checked ? '✓' : '';
+            }
+            $rows[] = $line;
+        }
+
+        $colWidths = [20];
+        foreach ($extraRowHeaders as $extraHeader) {
+            $colWidths[] = 18;
+        }
+        foreach ($colList as $col) {
+            $colWidths[] = 10;
+        }
+
+        return [
+            'headerRows' => [$headerRow],
+            'rows'       => $rows,
+            'colWidths'  => $colWidths,
+        ];
+    }
+
     // ── PL ↔ CPL Prodi ──────────────────────────────────────────────────────────
 
     public function plCpl(Kurikulum $kurikulum)
@@ -267,7 +344,56 @@ class PivotController extends Controller
         return back()->with('success', 'Matriks PL ↔ CPL berhasil disimpan.');
     }
 
+    public function exportPlCpl(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $plList  = $kurikulum->pl()->orderBy('urutan')->get();
+        $cplList = $kurikulum->cplProdi()->orderBy('urutan')->get();
+
+        $existing = DB::table('pivot_pl_cpl')
+            ->whereIn('id_pl', $plList->pluck('id'))
+            ->get()
+            ->groupBy('id_pl')
+            ->map(fn ($rows) => $rows->pluck('id_cpl')->toArray());
+
+        $sheet = $this->buildMatrixSheet(
+            $plList, $cplList, $existing,
+            fn ($pl) => $pl->kode_pl,
+            fn ($cpl) => $cpl->kode_cpl,
+            'PL \\ CPL Prodi',
+            'F59E0B',
+        );
+
+        return $excel->download("matriks-pl-cpl-{$kurikulum->kode}.xlsx", [
+            'PL-CPL' => $sheet,
+        ]);
+    }
+
     // ── CPL SN-Dikti ↔ CPL Prodi ───────────────────────────────────────────────
+
+    /**
+     * Setelah pivot_cplsn_cplp berubah, sinkronkan kolom `referensi` pada CPL Prodi
+     * agar terisi otomatis dengan kode CPL SN-Dikti yang terpetakan (dipisah koma).
+     */
+    private function syncCplProdiReferensi(array $cplProdiIds): void
+    {
+        if (empty($cplProdiIds)) {
+            return;
+        }
+
+        // Ambil semua kode SN-Dikti yang dipetakan ke masing-masing CPL Prodi
+        $mappings = DB::table('pivot_cplsn_cplp')
+            ->join('cpl_sndikti', 'pivot_cplsn_cplp.id_cpl_sndikti', '=', 'cpl_sndikti.id')
+            ->whereIn('pivot_cplsn_cplp.id_cpl_prodi', $cplProdiIds)
+            ->select('pivot_cplsn_cplp.id_cpl_prodi', 'cpl_sndikti.kode', 'cpl_sndikti.urutan')
+            ->orderBy('cpl_sndikti.urutan')
+            ->get()
+            ->groupBy('id_cpl_prodi');
+
+        foreach ($cplProdiIds as $id) {
+            $kodes = ($mappings->get($id) ?? collect())->pluck('kode')->implode(', ');
+            CplProdi::where('id', $id)->update(['referensi' => $kodes ?: null]);
+        }
+    }
 
     public function cplsnCplp(Kurikulum $kurikulum)
     {
@@ -307,7 +433,38 @@ class PivotController extends Controller
             }
         });
 
+        // Sinkronkan referensi untuk semua CPL Prodi yang terpengaruh
+        $this->syncCplProdiReferensi($cplpIds);
+
         return back()->with('success', 'Matriks CPL SN-Dikti ↔ CPL Prodi berhasil disimpan.');
+    }
+
+    public function exportCplsnCplp(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $cplsnList = CplSndikti::orderByRaw("FIELD(kategori, 'Sikap', 'Keterampilan Umum', 'Keterampilan Khusus', 'Pengetahuan')")
+            ->orderBy('urutan')
+            ->get();
+        $cplpList  = $kurikulum->cplProdi()->orderBy('urutan')->get();
+
+        $existing = DB::table('pivot_cplsn_cplp')
+            ->whereIn('id_cpl_prodi', $cplpList->pluck('id'))
+            ->get()
+            ->groupBy('id_cpl_sndikti')
+            ->map(fn ($rows) => $rows->pluck('id_cpl_prodi')->toArray());
+
+        $sheet = $this->buildMatrixSheet(
+            $cplsnList, $cplpList, $existing,
+            fn ($cplsn) => $cplsn->kode,
+            fn ($cplp) => $cplp->kode_cpl,
+            'CPL SN-Dikti \\ CPL Prodi',
+            'F59E0B',
+            ['Kategori'],
+            fn ($cplsn) => [$cplsn->kategori],
+        );
+
+        return $excel->download("matriks-cplsn-cplp-{$kurikulum->kode}.xlsx", [
+            'CPLSN-CPLP' => $sheet,
+        ]);
     }
 
     // ── CPL Prodi ↔ Bahan Kajian ────────────────────────────────────────────────
@@ -351,6 +508,30 @@ class PivotController extends Controller
         return back()->with('success', 'Matriks CPL ↔ Bahan Kajian berhasil disimpan.');
     }
 
+    public function exportCplBk(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $cplList = $kurikulum->cplProdi()->orderBy('urutan')->get();
+        $bkList  = $kurikulum->bahanKajian()->orderBy('urutan')->get();
+
+        $existing = DB::table('pivot_cpl_bk')
+            ->whereIn('id_cpl', $cplList->pluck('id'))
+            ->get()
+            ->groupBy('id_cpl')
+            ->map(fn ($rows) => $rows->pluck('id_bk')->toArray());
+
+        $sheet = $this->buildMatrixSheet(
+            $cplList, $bkList, $existing,
+            fn ($cpl) => $cpl->kode_cpl,
+            fn ($bk) => $bk->kode_bk,
+            'CPL Prodi \\ Bahan Kajian',
+            'F59E0B',
+        );
+
+        return $excel->download("matriks-cpl-bk-{$kurikulum->kode}.xlsx", [
+            'CPL-BK' => $sheet,
+        ]);
+    }
+
     // ── MK ↔ Bahan Kajian ───────────────────────────────────────────────────────
 
     public function mkBk(Kurikulum $kurikulum)
@@ -390,6 +571,30 @@ class PivotController extends Controller
         });
 
         return back()->with('success', 'Matriks MK ↔ Bahan Kajian berhasil disimpan.');
+    }
+
+    public function exportMkBk(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $mkList = $kurikulum->mataKuliah()->orderBy('semester')->orderBy('kode_mk')->get();
+        $bkList = $kurikulum->bahanKajian()->orderBy('urutan')->get();
+
+        $existing = DB::table('pivot_mk_bk')
+            ->whereIn('id_mk', $mkList->pluck('id'))
+            ->get()
+            ->groupBy('id_mk')
+            ->map(fn ($rows) => $rows->pluck('id_bk')->toArray());
+
+        $sheet = $this->buildMatrixSheet(
+            $mkList, $bkList, $existing,
+            fn ($mk) => $mk->kode_mk,
+            fn ($bk) => $bk->kode_bk,
+            'MK \\ Bahan Kajian',
+            'F59E0B',
+        );
+
+        return $excel->download("matriks-mk-bk-{$kurikulum->kode}.xlsx", [
+            'MK-BK' => $sheet,
+        ]);
     }
 
     // ── MK ↔ CPL (via CPMK) ─────────────────────────────────────────────────────
@@ -433,6 +638,30 @@ class PivotController extends Controller
         return back()->with('success', 'Matriks MK ↔ CPL berhasil disimpan.');
     }
 
+    public function exportMkCpl(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $mkList  = $kurikulum->mataKuliah()->orderBy('semester')->orderBy('kode_mk')->get();
+        $cplList = $kurikulum->cplProdi()->orderBy('urutan')->get();
+
+        $existing = DB::table('pivot_mk_cpl')
+            ->whereIn('id_mk', $mkList->pluck('id'))
+            ->get()
+            ->groupBy('id_mk')
+            ->map(fn ($rows) => $rows->pluck('id_cpl')->toArray());
+
+        $sheet = $this->buildMatrixSheet(
+            $mkList, $cplList, $existing,
+            fn ($mk) => $mk->kode_mk,
+            fn ($cpl) => $cpl->kode_cpl,
+            'MK \\ CPL Prodi',
+            'F59E0B',
+        );
+
+        return $excel->download("matriks-mk-cpl-{$kurikulum->kode}.xlsx", [
+            'MK-CPL' => $sheet,
+        ]);
+    }
+
     // ── CPL Prodi ↔ CPMK ───────────────────────────────────────────────────────
 
     public function cplCpmk(Kurikulum $kurikulum)
@@ -468,9 +697,34 @@ class PivotController extends Controller
         $mkList  = $kurikulum->mataKuliah()->orderBy('semester')->orderBy('kode_mk')->get();
         $mkById  = $mkList->keyBy('id');
 
-        // Tidak ada full re-sync di sini — supaya manual edit user pada matriks 3D ini
-        // tidak ter-overwrite. Sinkronisasi tetap berjalan saat user menyentuh matriks
-        // primer (CPL↔BK / MK↔BK) lewat endpoint toggle.
+        $rows = DB::table('pivot_cpl_bk_mk')
+            ->whereIn('id_cpl', $cplList->pluck('id'))
+            ->whereIn('id_bk',  $bkList->pluck('id'))
+            ->whereIn('id_mk',  $mkById->keys())
+            ->orderBy('id_mk')
+            ->get();
+
+        $matriks = [];    // [bk_id][cpl_id] = [MataKuliah, ...]
+        foreach ($rows as $r) {
+            if (!isset($mkById[$r->id_mk])) continue;
+            $matriks[$r->id_bk][$r->id_cpl][] = $mkById[$r->id_mk];
+        }
+
+        // Hitung coverage stats
+        $totalRelasi = $rows->count();
+        $bkTerisi   = count(array_filter($matriks, fn ($v) => !empty($v)));
+
+        return view('kurikulum.pivot.cpl-bk-mk', compact(
+            'kurikulum', 'cplList', 'bkList', 'mkList', 'mkById', 'matriks', 'totalRelasi', 'bkTerisi'
+        ));
+    }
+
+    public function exportCplBkMk(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $cplList = $kurikulum->cplProdi()->orderBy('urutan')->get();
+        $bkList  = $kurikulum->bahanKajian()->orderBy('urutan')->get();
+        $mkList  = $kurikulum->mataKuliah()->orderBy('semester')->orderBy('kode_mk')->get();
+        $mkById  = $mkList->keyBy('id');
 
         $rows = DB::table('pivot_cpl_bk_mk')
             ->whereIn('id_cpl', $cplList->pluck('id'))
@@ -479,42 +733,54 @@ class PivotController extends Controller
             ->orderBy('id_mk')
             ->get();
 
-        $matriks = [];          // [bk_id][cpl_id] = [MataKuliah, ...]
-        $matriksIds = [];       // [bk_id][cpl_id] = [mk_id, ...] untuk JS lookup
+        $matriks = [];
         foreach ($rows as $r) {
             if (!isset($mkById[$r->id_mk])) continue;
-            $matriks[$r->id_bk][$r->id_cpl][]    = $mkById[$r->id_mk];
-            $matriksIds[$r->id_bk][$r->id_cpl][] = (int) $r->id_mk;
+            $matriks[$r->id_bk][$r->id_cpl][] = $mkById[$r->id_mk]->kode_mk;
         }
 
-        return view('kurikulum.pivot.cpl-bk-mk', compact('kurikulum', 'cplList', 'bkList', 'mkList', 'mkById', 'matriks', 'matriksIds'));
+        $headerRow = [['label' => 'BK \\ CPL', 'bg' => 'F59E0B']];
+        foreach ($cplList as $cpl) {
+            $headerRow[] = ['label' => $cpl->kode_cpl, 'bg' => 'F59E0B'];
+        }
+
+        $dataRows = [];
+        foreach ($bkList as $bk) {
+            $line = [$bk->kode_bk];
+            foreach ($cplList as $cpl) {
+                $line[] = implode(', ', $matriks[$bk->id][$cpl->id] ?? []);
+            }
+            $dataRows[] = $line;
+        }
+
+        $colWidths = [14];
+        foreach ($cplList as $cpl) {
+            $colWidths[] = 20;
+        }
+
+        return $excel->download("matriks-cpl-bk-mk-{$kurikulum->kode}.xlsx", [
+            'CPL-BK-MK' => [
+                'headerRows' => [$headerRow],
+                'rows'       => $dataRows,
+                'colWidths'  => $colWidths,
+            ],
+        ]);
     }
 
-    public function saveCplBkMk(Request $request, Kurikulum $kurikulum)
+    /**
+     * Sinkronkan ulang pivot_cpl_bk_mk dari matriks primer (CPL↔BK ∩ MK↔BK).
+     * Dijalankan manual lewat tombol "Sync Ulang" di halaman matriks.
+     */
+    public function syncCplBkMk(Kurikulum $kurikulum)
     {
-        $cplIds = $kurikulum->cplProdi()->pluck('id')->toArray();
+        if ($kurikulum->isArsip()) {
+            return back()->with('error', 'Kurikulum sudah diarsipkan.');
+        }
 
-        DB::transaction(function () use ($request, $cplIds) {
-            DB::table('pivot_cpl_bk_mk')->whereIn('id_cpl', $cplIds)->delete();
+        // Full rebuild (non-additive): hapus semua lalu isi ulang dari primer
+        $this->consistency->syncCplBkMk($kurikulum, additive: false);
+        SyncMkCplJob::dispatch($kurikulum->id);
 
-            $inserts = [];
-            // pivot[cpl_id][bk_id][mk_id] = "1"
-            foreach ($request->input('pivot', []) as $cplId => $bkArr) {
-                if (!in_array($cplId, $cplIds)) {
-                    continue;
-                }
-                foreach ($bkArr as $bkId => $mkArr) {
-                    foreach (array_keys($mkArr) as $mkId) {
-                        $inserts[] = ['id_cpl' => $cplId, 'id_bk' => $bkId, 'id_mk' => $mkId];
-                    }
-                }
-            }
-
-            if (!empty($inserts)) {
-                DB::table('pivot_cpl_bk_mk')->insert($inserts);
-            }
-        });
-
-        return back()->with('success', 'Matriks CPL ↔ BK ↔ MK berhasil disimpan.');
+        return back()->with('success', 'Matriks CPL ↔ BK ↔ MK berhasil disinkronkan ulang dari CPL↔BK dan MK↔BK.');
     }
 }

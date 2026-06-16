@@ -6,208 +6,433 @@
     <title>Dokumen Kurikulum – {{ $kurikulum->kode }}</title>
     @vite(['resources/css/app.css'])
     <style>
-        body { font-family: serif; font-size: 12pt; color: #111; }
-        .no-print { }
+        body { font-family: 'Arial', sans-serif; font-size: 11pt; color: #1a1a1a; background: #fff; }
         @media print {
             .no-print { display: none !important; }
-            body { margin: 0; }
-            .page-break { page-break-before: always; }
+            body { margin: 0; font-size: 10pt; }
+            .page-break { page-break-before: always; break-before: page; }
+            .avoid-break { page-break-inside: avoid; break-inside: avoid; }
         }
         table { border-collapse: collapse; width: 100%; }
-        th, td { border: 1px solid #d1d5db; padding: 6px 10px; font-size: 10pt; }
-        th { background: #1e3a5f; color: #fff; text-align: left; }
-        .section-title { font-size: 14pt; font-weight: bold; border-bottom: 2px solid #1e3a5f; padding-bottom: 4px; margin-bottom: 12px; color: #1e3a5f; }
-        .sub-section { font-size: 12pt; font-weight: bold; color: #374151; margin: 12px 0 6px; }
+        th, td { border: 1px solid #9ca3af; padding: 5px 8px; font-size: 9.5pt; vertical-align: top; }
+        th { text-align: center; font-weight: bold; }
+        td { vertical-align: middle; }
+        .th-dark  { background: #1e3a5f; color: #fff; }
+        .th-blue  { background: #1d4ed8; color: #fff; }
+        .th-green { background: #15803d; color: #fff; }
+        .th-amber { background: #b45309; color: #fff; }
+        .th-violet{ background: #6d28d9; color: #fff; }
+        .th-teal  { background: #0f766e; color: #fff; }
+        .th-light { background: #e5e7eb; color: #111827; }
+        .check    { text-align: center; font-weight: bold; color: #15803d; font-size: 11pt; }
+        .section-title { font-size: 13pt; font-weight: bold; color: #1e3a5f; border-bottom: 2.5px solid #1e3a5f; padding-bottom: 5px; margin: 0 0 14px; }
+        .sub-title { font-size: 11pt; font-weight: bold; color: #374151; margin: 12px 0 5px; }
+        .badge-draft { display:inline-block; background:#f3f4f6; color:#6b7280; font-size:8.5pt; padding:1px 6px; border-radius:4px; font-weight:600; }
+        .badge-ok    { display:inline-block; background:#dcfce7; color:#15803d; font-size:8.5pt; padding:1px 6px; border-radius:4px; font-weight:600; }
     </style>
 </head>
 <body class="bg-white">
 
-{{-- Print button --}}
-<div class="no-print p-4 bg-blue-50 border-b border-blue-200 flex items-center gap-4">
-    <span class="text-sm font-medium text-blue-800">Dokumen Kurikulum – {{ $kurikulum->kode }}</span>
-    <button onclick="window.print()"
-            class="ml-auto bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-        Cetak / Simpan PDF
-    </button>
-    <a href="{{ url()->previous() }}"
-       class="text-sm text-gray-600 hover:text-gray-900 px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
-        Kembali
-    </a>
+{{-- ── Toolbar (tidak tercetak) ── --}}
+<div class="no-print" style="position:sticky;top:0;z-index:50;background:#1e3a5f;padding:10px 20px;display:flex;align-items:center;gap:12px;box-shadow:0 2px 6px rgba(0,0,0,.3)">
+    <span style="color:#93c5fd;font-size:12px;font-weight:600;">Dokumen Kurikulum</span>
+    <span style="color:#fff;font-size:13px;font-weight:bold;">{{ $kurikulum->kode }} — {{ $kurikulum->nama_kurikulum }}</span>
+    <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+        <button onclick="window.print()"
+                style="background:#2563eb;color:#fff;font-size:12px;font-weight:600;padding:6px 16px;border-radius:7px;border:none;cursor:pointer;display:flex;align-items:center;gap:5px">
+            <svg style="width:14px;height:14px" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+            </svg>
+            Cetak / Simpan PDF
+        </button>
+        <a href="{{ url()->previous() }}"
+           style="background:#374151;color:#d1d5db;font-size:12px;padding:6px 14px;border-radius:7px;text-decoration:none">← Kembali</a>
+    </div>
 </div>
 
-<div class="max-w-4xl mx-auto px-8 py-10">
+<div style="max-width:900px;margin:0 auto;padding:40px 50px 60px">
 
-    {{-- COVER --}}
-    <div class="text-center mb-12">
-        <p class="text-xs uppercase tracking-widest text-gray-500 mb-2">Dokumen Kurikulum</p>
-        <h1 class="text-2xl font-bold text-gray-900 mb-1">{{ $kurikulum->nama_kurikulum }}</h1>
-        <p class="text-base text-gray-600">{{ $kurikulum->program_studi }} — {{ $kurikulum->jenjang }}</p>
-        <p class="text-sm text-gray-500 mt-1">Tahun {{ $kurikulum->tahun_mulai }}{{ $kurikulum->tahun_selesai ? '–' . $kurikulum->tahun_selesai : '' }}</p>
-        <p class="text-xs text-gray-400 mt-3">Kode: {{ $kurikulum->kode }} &nbsp;|&nbsp; Status: {{ ucfirst($kurikulum->status) }}</p>
+    {{-- ════════════════════════════════════
+         HALAMAN JUDUL
+         ════════════════════════════════════ --}}
+    <div style="text-align:center;padding:40px 0 50px;border-bottom:3px solid #1e3a5f;margin-bottom:30px">
+        <p style="font-size:10pt;text-transform:uppercase;letter-spacing:.12em;color:#6b7280;margin-bottom:6px">Dokumen Kurikulum Program Studi</p>
+        <h1 style="font-size:22pt;font-weight:900;color:#1e3a5f;margin:0 0 6px">{{ $kurikulum->nama_kurikulum }}</h1>
+        @if ($kurikulum->program_studi)
+        <p style="font-size:13pt;color:#374151;margin:4px 0">{{ $kurikulum->program_studi }}
+            @if ($kurikulum->jenjang) &nbsp;({{ $kurikulum->jenjang }})@endif
+        </p>
+        @endif
+        <p style="font-size:11pt;color:#6b7280;margin:8px 0 0">
+            Tahun {{ $kurikulum->tahun_mulai }}{{ $kurikulum->tahun_selesai ? '–' . $kurikulum->tahun_selesai : ' – sekarang' }}
+        </p>
+        <p style="font-size:9.5pt;color:#9ca3af;margin-top:6px">
+            Kode: <strong>{{ $kurikulum->kode }}</strong>
+            &nbsp;|&nbsp;
+            Status: <strong>{{ ucfirst($kurikulum->status ?? 'aktif') }}</strong>
+            &nbsp;|&nbsp;
+            Dicetak: {{ now()->translatedFormat('d F Y') }}
+        </p>
     </div>
 
-    {{-- VISI MISI --}}
-    @if ($kurikulum->visi || $kurikulum->misi)
-    <div class="mb-8">
-        <h2 class="section-title">Visi & Misi Program Studi</h2>
+    {{-- ════════════════════════════════════
+         VISI, MISI, TUJUAN
+         ════════════════════════════════════ --}}
+    @if ($kurikulum->visi || $kurikulum->misi || $kurikulum->tujuan)
+    <div class="avoid-break" style="margin-bottom:30px">
+        <h2 class="section-title">Visi, Misi, dan Tujuan Program Studi</h2>
+
         @if ($kurikulum->visi)
-        <div class="mb-3">
-            <p class="sub-section">Visi</p>
-            <p class="text-sm text-gray-700 leading-relaxed">{{ $kurikulum->visi }}</p>
+        <div class="avoid-break" style="margin-bottom:12px">
+            <p class="sub-title">Visi</p>
+            <p style="margin:0;line-height:1.7;font-style:italic;color:#374151">{{ $kurikulum->visi }}</p>
         </div>
         @endif
+
         @if ($kurikulum->misi)
-        <div class="mb-3">
-            <p class="sub-section">Misi</p>
-            <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ $kurikulum->misi }}</p>
+        <div class="avoid-break" style="margin-bottom:12px">
+            <p class="sub-title">Misi</p>
+            <p style="margin:0;line-height:1.7;color:#374151;white-space:pre-line">{{ $kurikulum->misi }}</p>
         </div>
         @endif
+
         @if ($kurikulum->tujuan)
-        <div class="mb-3">
-            <p class="sub-section">Tujuan</p>
-            <p class="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{{ $kurikulum->tujuan }}</p>
+        <div class="avoid-break">
+            <p class="sub-title">Tujuan</p>
+            <p style="margin:0;line-height:1.7;color:#374151;white-space:pre-line">{{ $kurikulum->tujuan }}</p>
         </div>
         @endif
     </div>
     @endif
 
-    {{-- PROFIL LULUSAN --}}
-    <div class="mb-8 page-break">
-        <h2 class="section-title">Profil Lulusan (PL)</h2>
+    {{-- ════════════════════════════════════
+         1. PROFIL LULUSAN (PL)
+         ════════════════════════════════════ --}}
+    <div class="page-break avoid-break" style="margin-bottom:30px">
+        <h2 class="section-title">1. Profil Lulusan (PL)</h2>
         <table>
             <thead>
                 <tr>
-                    <th class="w-20">Kode PL</th>
-                    <th>Deskripsi</th>
-                    <th class="w-36">Kategori</th>
-                    <th class="w-16">Status</th>
+                    <th class="th-dark" style="width:5%">No</th>
+                    <th class="th-dark" style="width:12%">Kode PL</th>
+                    <th class="th-dark" style="width:55%">Deskripsi Profil Lulusan</th>
+                    <th class="th-dark" style="width:18%">Kategori</th>
+                    <th class="th-dark" style="width:10%">Status</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($kurikulum->pl as $pl)
-                <tr>
-                    <td class="font-mono font-bold text-amber-800">{{ $pl->kode_pl }}</td>
-                    <td>{{ $pl->deskripsi }}</td>
-                    <td>{{ $pl->kategori ?? '—' }}</td>
-                    <td class="text-center">{{ ucfirst($pl->status) }}</td>
+                <tr style="background:{{ $loop->odd ? '#fff' : '#f8fafc' }}">
+                    <td style="text-align:center">{{ $pl->urutan }}</td>
+                    <td style="text-align:center;font-family:monospace;font-weight:bold;color:#92400e">{{ $pl->kode_pl }}</td>
+                    <td style="line-height:1.5">{{ $pl->deskripsi }}</td>
+                    <td style="text-align:center;font-size:9pt">{{ $pl->kategori ?? '—' }}</td>
+                    <td style="text-align:center">
+                        @if (($pl->status ?? 'draft') === 'approved')
+                            <span class="badge-ok">Approved</span>
+                        @else
+                            <span class="badge-draft">Draft</span>
+                        @endif
+                    </td>
                 </tr>
                 @empty
-                <tr><td colspan="4" class="text-center text-gray-400">Belum ada PL.</td></tr>
+                <tr><td colspan="5" style="text-align:center;color:#9ca3af;padding:16px">Belum ada Profil Lulusan.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 
-    {{-- CPL PRODI --}}
-    <div class="mb-8">
-        <h2 class="section-title">CPL Program Studi</h2>
+    {{-- ════════════════════════════════════
+         2. CPL PROGRAM STUDI
+         ════════════════════════════════════ --}}
+    <div class="avoid-break" style="margin-bottom:30px">
+        <h2 class="section-title">2. Capaian Pembelajaran Lulusan (CPL) Program Studi</h2>
         <table>
             <thead>
                 <tr>
-                    <th class="w-20">Kode CPL</th>
-                    <th>Deskripsi</th>
-                    <th class="w-24">Kategori</th>
+                    <th class="th-blue" style="width:5%">No</th>
+                    <th class="th-blue" style="width:12%">Kode CPL</th>
+                    <th class="th-blue" style="width:63%">Rumusan CPL</th>
+                    <th class="th-blue" style="width:20%">Kategori</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse ($kurikulum->cplProdi as $cpl)
-                <tr>
-                    <td class="font-mono font-bold text-blue-800">{{ $cpl->kode_cpl }}</td>
-                    <td>{{ $cpl->deskripsi }}</td>
-                    <td>{{ $cpl->kategori ?? '—' }}</td>
+                <tr style="background:{{ $loop->odd ? '#fff' : '#eff6ff' }}">
+                    <td style="text-align:center">{{ $cpl->urutan }}</td>
+                    <td style="text-align:center;font-family:monospace;font-weight:bold;color:#1d4ed8">{{ $cpl->kode_cpl }}</td>
+                    <td style="line-height:1.5">{{ $cpl->deskripsi }}</td>
+                    <td style="text-align:center;font-size:9pt">{{ $cpl->kategori ?? '—' }}</td>
                 </tr>
                 @empty
-                <tr><td colspan="3" class="text-center text-gray-400">Belum ada CPL.</td></tr>
+                <tr><td colspan="4" style="text-align:center;color:#9ca3af;padding:16px">Belum ada CPL.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 
-    {{-- BAHAN KAJIAN --}}
-    <div class="mb-8 page-break">
-        <h2 class="section-title">Bahan Kajian (BK)</h2>
+    {{-- ════════════════════════════════════
+         3. BAHAN KAJIAN
+         ════════════════════════════════════ --}}
+    @if ($kurikulum->bahanKajian->count() > 0)
+    <div class="page-break avoid-break" style="margin-bottom:30px">
+        <h2 class="section-title">3. Bahan Kajian (BK)</h2>
         <table>
             <thead>
                 <tr>
-                    <th class="w-20">Kode BK</th>
-                    <th>Nama Bahan Kajian</th>
-                    <th>Bidang Keilmuan</th>
+                    <th class="th-green" style="width:5%">No</th>
+                    <th class="th-green" style="width:12%">Kode BK</th>
+                    <th class="th-green" style="width:40%">Nama Bahan Kajian</th>
+                    <th class="th-green" style="width:43%">Bidang Keilmuan / Deskripsi</th>
                 </tr>
             </thead>
             <tbody>
-                @forelse ($kurikulum->bahanKajian as $bk)
-                <tr>
-                    <td class="font-mono font-bold text-emerald-800">{{ $bk->kode_bk }}</td>
+                @foreach ($kurikulum->bahanKajian as $bk)
+                <tr style="background:{{ $loop->odd ? '#fff' : '#f0fdf4' }}">
+                    <td style="text-align:center">{{ $loop->iteration }}</td>
+                    <td style="text-align:center;font-family:monospace;font-weight:bold;color:#15803d">{{ $bk->kode_bk }}</td>
                     <td>{{ $bk->nama_bk }}</td>
-                    <td>{{ $bk->bidang_keilmuan ?? '—' }}</td>
+                    <td style="color:#374151;font-size:9pt">{{ $bk->bidang_keilmuan ?: ($bk->deskripsi ?: '—') }}</td>
                 </tr>
-                @empty
-                <tr><td colspan="3" class="text-center text-gray-400">Belum ada BK.</td></tr>
-                @endforelse
+                @endforeach
             </tbody>
         </table>
     </div>
+    @endif
 
-    {{-- MATA KULIAH PER SEMESTER --}}
-    <div class="mb-8 page-break">
-        <h2 class="section-title">Mata Kuliah per Semester</h2>
-        @foreach ($mkBySemester as $smt => $mks)
-        <div class="mb-4">
-            <p class="sub-section">Semester {{ $smt }}</p>
-            <table>
+    {{-- ════════════════════════════════════
+         4. MATRIKS PL ↔ CPL
+         ════════════════════════════════════ --}}
+    @if ($kurikulum->pl->count() > 0 && $kurikulum->cplProdi->count() > 0 && $pivotPlCpl->count() > 0)
+    <div class="page-break avoid-break" style="margin-bottom:30px">
+        <h2 class="section-title">4. Matriks Pemetaan PL terhadap CPL</h2>
+        <p style="font-size:9pt;color:#6b7280;margin-bottom:8px">Tanda <strong>✓</strong> menunjukkan CPL yang mendukung pencapaian Profil Lulusan tersebut.</p>
+        <div style="overflow-x:auto">
+        <table style="font-size:8.5pt">
+            <thead>
+                <tr>
+                    <th class="th-dark" rowspan="2" style="width:12%">Kode PL</th>
+                    <th class="th-dark" colspan="{{ $kurikulum->cplProdi->count() }}" style="text-align:center">CPL Program Studi</th>
+                </tr>
+                <tr>
+                    @foreach ($kurikulum->cplProdi as $cpl)
+                    <th class="th-blue" style="width:{{ max(6, 60 / max($kurikulum->cplProdi->count(),1)) }}%;font-size:8pt">{{ $cpl->kode_cpl }}</th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($kurikulum->pl as $pl)
+                <tr style="background:{{ $loop->odd ? '#fff' : '#f8fafc' }}">
+                    <td style="font-family:monospace;font-weight:bold;color:#92400e;text-align:center">{{ $pl->kode_pl }}</td>
+                    @foreach ($kurikulum->cplProdi as $cpl)
+                    <td class="{{ in_array($cpl->id, $pivotPlCpl->get($pl->id, [])) ? 'check' : '' }}" style="text-align:center">
+                        {{ in_array($cpl->id, $pivotPlCpl->get($pl->id, [])) ? '✓' : '' }}
+                    </td>
+                    @endforeach
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        </div>
+    </div>
+    @endif
+
+    {{-- ════════════════════════════════════
+         5. MATRIKS CPL ↔ BAHAN KAJIAN
+         ════════════════════════════════════ --}}
+    @if ($kurikulum->bahanKajian->count() > 0 && $pivotCplBk->count() > 0)
+    <div class="page-break avoid-break" style="margin-bottom:30px">
+        <h2 class="section-title">5. Matriks Pemetaan CPL terhadap Bahan Kajian</h2>
+        <p style="font-size:9pt;color:#6b7280;margin-bottom:8px">Tanda <strong>✓</strong> menunjukkan Bahan Kajian yang mendukung pencapaian CPL tersebut.</p>
+        <div style="overflow-x:auto">
+        <table style="font-size:8.5pt">
+            <thead>
+                <tr>
+                    <th class="th-dark" rowspan="2" style="width:12%">Kode CPL</th>
+                    <th class="th-green" colspan="{{ $kurikulum->bahanKajian->count() }}" style="text-align:center">Bahan Kajian</th>
+                </tr>
+                <tr>
+                    @foreach ($kurikulum->bahanKajian as $bk)
+                    <th class="th-green" style="font-size:8pt">{{ $bk->kode_bk }}</th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($kurikulum->cplProdi as $cpl)
+                <tr style="background:{{ $loop->odd ? '#fff' : '#f0fdf4' }}">
+                    <td style="font-family:monospace;font-weight:bold;color:#1d4ed8;text-align:center">{{ $cpl->kode_cpl }}</td>
+                    @foreach ($kurikulum->bahanKajian as $bk)
+                    <td class="{{ in_array($bk->id, $pivotCplBk->get($cpl->id, [])) ? 'check' : '' }}" style="text-align:center">
+                        {{ in_array($bk->id, $pivotCplBk->get($cpl->id, [])) ? '✓' : '' }}
+                    </td>
+                    @endforeach
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+        </div>
+    </div>
+    @endif
+
+    {{-- ════════════════════════════════════
+         6. MATA KULIAH PER SEMESTER
+         ════════════════════════════════════ --}}
+    <div class="page-break" style="margin-bottom:30px">
+        <h2 class="section-title">6. Struktur Mata Kuliah per Semester</h2>
+
+        @php
+            $totalSksMk    = $kurikulum->mataKuliah->sum(fn ($mk) => ($mk->sks_teori ?? 0) + ($mk->sks_praktikum ?? 0));
+            $totalMk       = $kurikulum->mataKuliah->count();
+        @endphp
+        <p style="font-size:9.5pt;color:#374151;margin-bottom:10px">
+            Total: <strong>{{ $totalMk }} mata kuliah</strong> &nbsp;|&nbsp; Total SKS: <strong>{{ $totalSksMk }}</strong>
+        </p>
+
+        @forelse ($mkBySemester as $smt => $mks)
+        @php
+            $sksSmt = $mks->sum(fn ($mk) => ($mk->sks_teori ?? 0) + ($mk->sks_praktikum ?? 0));
+        @endphp
+        <div class="avoid-break" style="margin-bottom:14px">
+            <p class="sub-title">Semester {{ $smt }}
+                <span style="font-weight:normal;font-size:9.5pt;color:#6b7280">
+                    ({{ $mks->count() }} MK &nbsp;|&nbsp; {{ $sksSmt }} SKS)
+                </span>
+            </p>
+            <table style="font-size:9pt">
                 <thead>
                     <tr>
-                        <th class="w-24">Kode MK</th>
-                        <th>Nama Mata Kuliah</th>
-                        <th class="w-16 text-center">T</th>
-                        <th class="w-16 text-center">P</th>
-                        <th class="w-16 text-center">SKS</th>
-                        <th class="w-24">Kategori</th>
-                        <th class="w-28">Prasyarat</th>
+                        <th class="th-dark" style="width:4%">No</th>
+                        <th class="th-dark" style="width:13%">Kode MK</th>
+                        <th class="th-dark" style="width:37%">Nama Mata Kuliah</th>
+                        <th class="th-dark" style="width:7%">T</th>
+                        <th class="th-dark" style="width:7%">P</th>
+                        <th class="th-dark" style="width:7%">SKS</th>
+                        <th class="th-dark" style="width:14%">Kategori</th>
+                        <th class="th-dark" style="width:11%">Prasyarat</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($mks as $mk)
-                    <tr>
-                        <td class="font-mono font-bold">{{ $mk->kode_mk }}</td>
+                    @php $sksMk = ($mk->sks_teori ?? 0) + ($mk->sks_praktikum ?? 0); @endphp
+                    <tr style="background:{{ $loop->odd ? '#fff' : '#f8fafc' }}">
+                        <td style="text-align:center">{{ $loop->iteration }}</td>
+                        <td style="font-family:monospace;font-weight:bold;text-align:center">{{ $mk->kode_mk }}</td>
                         <td>{{ $mk->nama_mk }}</td>
-                        <td class="text-center">{{ $mk->sks_teori }}</td>
-                        <td class="text-center">{{ $mk->sks_praktikum }}</td>
-                        <td class="text-center font-bold">{{ ($mk->sks_teori ?? 0) + ($mk->sks_praktikum ?? 0) }}</td>
-                        <td>{{ $mk->kategori_mk }}</td>
-                        <td>{{ $mk->kode_prasyarat ?? '—' }}</td>
+                        <td style="text-align:center">{{ $mk->sks_teori ?? 0 }}</td>
+                        <td style="text-align:center">{{ $mk->sks_praktikum ?? 0 }}</td>
+                        <td style="text-align:center;font-weight:bold">{{ $sksMk }}</td>
+                        <td style="text-align:center;font-size:8.5pt">{{ $mk->kategori_mk ?? '—' }}</td>
+                        <td style="text-align:center;font-size:8.5pt">{{ $mk->kode_prasyarat ?? '—' }}</td>
                     </tr>
                     @endforeach
+                    <tr style="background:#e5e7eb">
+                        <td colspan="5" style="text-align:right;font-weight:bold;font-size:9pt">Total SKS Semester {{ $smt }}</td>
+                        <td style="text-align:center;font-weight:bold;font-size:10pt">{{ $sksSmt }}</td>
+                        <td colspan="2"></td>
+                    </tr>
                 </tbody>
             </table>
         </div>
-        @endforeach
+        @empty
+        <p style="color:#9ca3af;text-align:center;padding:20px">Belum ada mata kuliah terdaftar.</p>
+        @endforelse
     </div>
 
-    {{-- CPMK per MK --}}
-    <div class="mb-8 page-break">
-        <h2 class="section-title">CPMK per Mata Kuliah</h2>
+    {{-- ════════════════════════════════════
+         7. MATRIKS MK ↔ CPL
+         ════════════════════════════════════ --}}
+    @if ($kurikulum->mataKuliah->count() > 0 && $kurikulum->cplProdi->count() > 0 && $pivotMkCpl->count() > 0)
+    <div class="page-break avoid-break" style="margin-bottom:30px">
+        <h2 class="section-title">7. Matriks Pemetaan Mata Kuliah terhadap CPL</h2>
+        <p style="font-size:9pt;color:#6b7280;margin-bottom:8px">Tanda <strong>✓</strong> menunjukkan CPL yang diemban oleh mata kuliah tersebut.</p>
+        <div style="overflow-x:auto">
+        <table style="font-size:8.5pt">
+            <thead>
+                <tr>
+                    <th class="th-dark" rowspan="2" style="width:8%">Smt</th>
+                    <th class="th-dark" rowspan="2" style="width:13%">Kode MK</th>
+                    <th class="th-dark" rowspan="2" style="width:30%">Nama MK</th>
+                    <th class="th-blue" colspan="{{ $kurikulum->cplProdi->count() }}" style="text-align:center">CPL Program Studi</th>
+                </tr>
+                <tr>
+                    @foreach ($kurikulum->cplProdi as $cpl)
+                    <th class="th-blue" style="font-size:8pt">{{ $cpl->kode_cpl }}</th>
+                    @endforeach
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($mkBySemester as $smt => $mks)
+                    @foreach ($mks as $mk)
+                    <tr style="background:{{ $loop->parent->odd ? ($loop->odd ? '#fff' : '#f8fafc') : ($loop->odd ? '#eff6ff' : '#dbeafe') }}">
+                        @if ($loop->first)
+                        <td style="text-align:center;font-weight:bold" rowspan="{{ $mks->count() }}">{{ $smt }}</td>
+                        @endif
+                        <td style="font-family:monospace;font-weight:bold;text-align:center;font-size:8pt">{{ $mk->kode_mk }}</td>
+                        <td style="font-size:8.5pt">{{ $mk->nama_mk }}</td>
+                        @foreach ($kurikulum->cplProdi as $cpl)
+                        <td class="{{ in_array($cpl->id, $pivotMkCpl->get($mk->id, [])) ? 'check' : '' }}" style="text-align:center">
+                            {{ in_array($cpl->id, $pivotMkCpl->get($mk->id, [])) ? '✓' : '' }}
+                        </td>
+                        @endforeach
+                    </tr>
+                    @endforeach
+                @endforeach
+            </tbody>
+        </table>
+        </div>
+    </div>
+    @endif
+
+    {{-- ════════════════════════════════════
+         8. CPMK DAN SUB-CPMK PER MK
+         ════════════════════════════════════ --}}
+    <div class="page-break" style="margin-bottom:30px">
+        <h2 class="section-title">8. Capaian Pembelajaran Mata Kuliah (CPMK) dan Sub-CPMK</h2>
+
         @foreach ($kurikulum->mataKuliah as $mk)
             @if ($cpmkByMk->has($mk->id))
-            <div class="mb-4">
-                <p class="sub-section">{{ $mk->kode_mk }} – {{ $mk->nama_mk }}</p>
-                <table>
+            @php $cpmks = $cpmkByMk[$mk->id]; @endphp
+            <div class="avoid-break" style="margin-bottom:16px">
+                <p class="sub-title">{{ $mk->kode_mk }} – {{ $mk->nama_mk }}
+                    <span style="font-weight:normal;font-size:9pt;color:#6b7280">
+                        (Semester {{ $mk->semester }}, {{ ($mk->sks_teori ?? 0) + ($mk->sks_praktikum ?? 0) }} SKS)
+                    </span>
+                </p>
+                <table style="font-size:8.5pt">
                     <thead>
                         <tr>
-                            <th class="w-24">Kode CPMK</th>
-                            <th>Deskripsi</th>
-                            <th class="w-20">Level Bloom</th>
-                            <th class="w-24">CPL Terkait</th>
+                            <th class="th-amber" style="width:12%">Kode CPMK</th>
+                            <th class="th-amber" style="width:45%">Rumusan CPMK</th>
+                            <th class="th-amber" style="width:10%">CPL</th>
+                            <th class="th-amber" style="width:13%">Level Bloom</th>
+                            <th class="th-amber" style="width:10%">Kode Sub-CPMK</th>
+                            <th class="th-amber" style="width:10%">Bobot</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach ($cpmkByMk[$mk->id] as $cpmk)
-                        <tr>
-                            <td class="font-mono font-bold text-xs">{{ $cpmk->kode_cpmk }}</td>
-                            <td>{{ $cpmk->deskripsi }}</td>
-                            <td class="text-center text-xs font-mono">{{ $cpmk->level_bloom ?? '—' }}</td>
-                            <td class="font-mono text-xs text-blue-800">{{ $cpmk->cplProdi?->kode_cpl ?? '—' }}</td>
-                        </tr>
+                        @foreach ($cpmks as $cpmk)
+                            @if ($cpmk->subCpmk->isEmpty())
+                            <tr style="background:{{ $loop->odd ? '#fff' : '#fffbeb' }}">
+                                <td style="font-family:monospace;font-weight:bold;text-align:center;color:#92400e">{{ $cpmk->kode_cpmk }}</td>
+                                <td style="line-height:1.5">{{ $cpmk->deskripsi }}</td>
+                                <td style="text-align:center;font-family:monospace;color:#1d4ed8;font-weight:bold;font-size:8pt">{{ $cpmk->cplProdi?->kode_cpl ?? '—' }}</td>
+                                <td style="text-align:center;font-size:8.5pt">{{ $cpmk->level_bloom ?? '—' }}</td>
+                                <td colspan="2" style="text-align:center;color:#9ca3af;font-size:8.5pt">—</td>
+                            </tr>
+                            @else
+                                @foreach ($cpmk->subCpmk as $sub)
+                                <tr style="background:{{ $loop->parent->odd ? ($loop->odd ? '#fff' : '#fffbeb') : ($loop->odd ? '#fef9ee' : '#fef3c7') }}">
+                                    @if ($loop->first)
+                                    <td style="font-family:monospace;font-weight:bold;text-align:center;color:#92400e;vertical-align:middle" rowspan="{{ $cpmk->subCpmk->count() }}">{{ $cpmk->kode_cpmk }}</td>
+                                    <td style="line-height:1.5;vertical-align:middle" rowspan="{{ $cpmk->subCpmk->count() }}">{{ $cpmk->deskripsi }}</td>
+                                    <td style="text-align:center;font-family:monospace;color:#1d4ed8;font-weight:bold;font-size:8pt;vertical-align:middle" rowspan="{{ $cpmk->subCpmk->count() }}">{{ $cpmk->cplProdi?->kode_cpl ?? '—' }}</td>
+                                    <td style="text-align:center;font-size:8.5pt;vertical-align:middle" rowspan="{{ $cpmk->subCpmk->count() }}">{{ $cpmk->level_bloom ?? '—' }}</td>
+                                    @endif
+                                    <td style="font-family:monospace;text-align:center;font-size:8pt;font-weight:bold">{{ $sub->kode_sub_cpmk }}</td>
+                                    <td style="text-align:center;font-size:8.5pt">{{ $sub->bobot ? $sub->bobot . '%' : '—' }}</td>
+                                </tr>
+                                @endforeach
+                            @endif
                         @endforeach
                     </tbody>
                 </table>
@@ -216,9 +441,63 @@
         @endforeach
     </div>
 
-    {{-- Footer --}}
-    <div class="border-t border-gray-300 pt-4 mt-8 text-center text-xs text-gray-400">
-        Dicetak dari SI-OBE &nbsp;|&nbsp; {{ now()->format('d M Y H:i') }} &nbsp;|&nbsp; {{ $kurikulum->kode }}
+    {{-- ════════════════════════════════════
+         9. TEKNIK DAN BOBOT PENILAIAN
+         ════════════════════════════════════ --}}
+    @php
+        $hasPenilaian = $cpmkByMk->flatten()->filter(fn ($c) => $c->penilaian)->count() > 0;
+    @endphp
+    @if ($hasPenilaian)
+    <div class="page-break" style="margin-bottom:30px">
+        <h2 class="section-title">9. Teknik dan Bobot Penilaian per CPMK</h2>
+        <table style="font-size:8.5pt">
+            <thead>
+                <tr>
+                    <th class="th-violet" style="width:10%">MK</th>
+                    <th class="th-violet" style="width:10%">CPMK</th>
+                    <th class="th-violet" style="width:10%">CPL</th>
+                    <th class="th-violet" style="width:8%">Quiz</th>
+                    <th class="th-violet" style="width:9%">Observasi</th>
+                    <th class="th-violet" style="width:10%">Unjuk Kerja</th>
+                    <th class="th-violet" style="width:7%">UTS</th>
+                    <th class="th-violet" style="width:7%">UAS</th>
+                    <th class="th-violet" style="width:9%">Tes Lisan</th>
+                    <th class="th-violet" style="width:10%">Skor Maks</th>
+                    <th class="th-violet" style="width:10%">Instrumen</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php $rowIdx = 0; @endphp
+                @foreach ($kurikulum->mataKuliah as $mk)
+                    @if (!$cpmkByMk->has($mk->id)) @continue @endif
+                    @foreach ($cpmkByMk[$mk->id] as $cpmk)
+                    @php $p = $cpmk->penilaian; $rowIdx++; @endphp
+                    <tr style="background:{{ $rowIdx % 2 === 0 ? '#f5f3ff' : '#fff' }}">
+                        <td style="font-family:monospace;font-weight:bold;text-align:center;font-size:8pt">{{ $mk->kode_mk }}</td>
+                        <td style="font-family:monospace;font-weight:bold;text-align:center;color:#6d28d9;font-size:8pt">{{ $cpmk->kode_cpmk }}</td>
+                        <td style="font-family:monospace;text-align:center;color:#1d4ed8;font-size:8pt">{{ $cpmk->cplProdi?->kode_cpl ?? '—' }}</td>
+                        <td style="text-align:center">{{ $p && $p->teknik_quiz ? ($p->bobot_quiz ? $p->bobot_quiz.'%' : '✓') : '' }}</td>
+                        <td style="text-align:center">{{ $p && $p->teknik_observasi ? ($p->bobot_observasi ? $p->bobot_observasi.'%' : '✓') : '' }}</td>
+                        <td style="text-align:center">{{ $p && $p->teknik_unjuk_kerja ? ($p->bobot_unjuk_kerja ? $p->bobot_unjuk_kerja.'%' : '✓') : '' }}</td>
+                        <td style="text-align:center">{{ $p && $p->teknik_uts ? ($p->bobot_uts ? $p->bobot_uts.'%' : '✓') : '' }}</td>
+                        <td style="text-align:center">{{ $p && $p->teknik_uas ? ($p->bobot_uas ? $p->bobot_uas.'%' : '✓') : '' }}</td>
+                        <td style="text-align:center">{{ $p && $p->teknik_tes_lisan ? ($p->bobot_tes_lisan ? $p->bobot_tes_lisan.'%' : '✓') : '' }}</td>
+                        <td style="text-align:center">{{ $p && !is_null($p->skor_maks) ? $p->skor_maks : '—' }}</td>
+                        <td style="font-size:8pt">{{ $p?->instrumen ?: '—' }}</td>
+                    </tr>
+                    @endforeach
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
+
+    {{-- ════════════════════════════════════
+         FOOTER
+         ════════════════════════════════════ --}}
+    <div style="border-top:2px solid #e5e7eb;padding-top:12px;margin-top:20px;text-align:center;font-size:8.5pt;color:#9ca3af">
+        <strong style="color:#6b7280">{{ $kurikulum->kode }}</strong> — {{ $kurikulum->nama_kurikulum }}
+        &nbsp;|&nbsp; Dicetak dari SI-OBE &nbsp;|&nbsp; {{ now()->format('d M Y, H:i') }}
     </div>
 
 </div>

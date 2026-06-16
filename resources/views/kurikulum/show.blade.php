@@ -170,11 +170,10 @@
 </div>
 
 {{-- ── Administrasi (compact) ──────────────────────────────────────── --}}
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
     @foreach ([
-        ['label'=>'Periode Penyusunan', 'sub'=>$kurikulum->periode_count.' periode',     'route'=>route('kurikulum.periode.index', $kurikulum),     'icon'=>'calendar'],
-        ['label'=>'Tim Kurikulum',      'sub'=>'Anggota penyusun',                       'route'=>route('kurikulum.tim.index', $kurikulum),         'icon'=>'users'],
-        ['label'=>'Arsip Rapat',        'sub'=>$kurikulum->arsip_rapat_count.' dokumen', 'route'=>route('kurikulum.arsip-rapat.index', $kurikulum), 'icon'=>'meeting'],
+        ['label'=>'Distribusi Semester', 'sub'=>$kurikulum->distribusi_semester_count.' semester', 'route'=>route('kurikulum.distribusi-semester', $kurikulum), 'icon'=>'calendar'],
+        ['label'=>'Arsip Rapat',        'sub'=>$kurikulum->arsip_rapat_count.' dokumen',            'route'=>route('kurikulum.arsip-rapat.index', $kurikulum),   'icon'=>'meeting'],
     ] as $a)
         <a href="{{ $a['route'] }}"
            class="flex items-center gap-3 bg-white border border-gray-100 hover:border-gray-300 rounded-xl px-4 py-3 shadow-sm transition-colors">

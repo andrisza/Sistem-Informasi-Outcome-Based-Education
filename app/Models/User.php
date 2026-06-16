@@ -22,6 +22,7 @@ class User extends Authenticatable
         'fakultas',
         'perguruan_tinggi',
         'tahun_masuk',
+        'kelas',
         'id_kurikulum',
         'foto',
         'status_aktif',

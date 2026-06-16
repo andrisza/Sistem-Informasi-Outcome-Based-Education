@@ -10,14 +10,11 @@
     <span class="text-gray-700 font-medium">Tahap &amp; Mekanisme Penilaian</span>
 @endsection
 
-@section('content')
+@section('header-actions')
+    @include('layouts._export-button', ['route' => route('kurikulum.penilaian.tahap.export', $kurikulum)])
+@endsection
 
-@if (session('success'))
-    <div class="mb-4 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-800">
-        <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
-        {{ session('success') }}
-    </div>
-@endif
+@section('content')
 
 <div class="flex items-center gap-3 mb-3 text-xs text-gray-500">
     <span>Teknik Penilaian diambil dari halaman
@@ -193,17 +190,27 @@
                                         @endif
                                     </td>
 
-                                    {{-- Bobot (derived from skor_maks atau total bobot penilaian) --}}
-                                    <td class="px-3 py-2 text-center border border-violet-100 align-middle">
+                                    {{-- Bobot (editable skor_maks) --}}
+                                    <td class="px-2 py-1.5 text-center border border-violet-100 align-middle">
                                         @php
-                                            $skorMaks = $p && !is_null($p->skor_maks)
+                                            $skorVal = $p && !is_null($p->skor_maks)
                                                 ? (float)$p->skor_maks
-                                                : ($totalBobot > 0 ? $totalBobot : null);
+                                                : ($totalBobot > 0 ? $totalBobot : '');
                                         @endphp
-                                        @if ($skorMaks !== null)
-                                            <span class="font-bold text-amber-700 text-xs">{{ $skorMaks }}</span>
+                                        @if (!$kurikulum->isArsip())
+                                            <input type="number"
+                                                   name="penilaian[{{ $cpmk->id }}][skor_maks]"
+                                                   value="{{ old("penilaian.{$cpmk->id}.skor_maks", $skorVal) }}"
+                                                   min="0" max="100" step="0.01"
+                                                   class="w-14 text-center border border-violet-300 rounded px-1 py-0.5 text-xs
+                                                          focus:outline-none focus:ring-1 focus:ring-violet-500 bg-white"
+                                                   placeholder="0">
                                         @else
-                                            <span class="text-gray-300 text-xs">—</span>
+                                            @if ($skorVal !== '')
+                                                <span class="font-bold text-amber-700 text-xs">{{ $skorVal }}</span>
+                                            @else
+                                                <span class="text-gray-300 text-xs">—</span>
+                                            @endif
                                         @endif
                                     </td>
 

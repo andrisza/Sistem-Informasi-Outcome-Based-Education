@@ -11,6 +11,10 @@
     <span class="text-gray-700 font-medium">Matriks CPL ↔ BK</span>
 @endsection
 
+@section('header-actions')
+    @include('layouts._export-button', ['route' => route('kurikulum.pivot.cpl-bk.export', $kurikulum)])
+@endsection
+
 @section('content')
 
 @if ($cplList->isEmpty() || $bkList->isEmpty())

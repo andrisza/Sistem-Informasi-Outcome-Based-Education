@@ -95,6 +95,17 @@
                            class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
 
+                {{-- Kelas --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1.5">
+                        Kelas
+                        <span class="text-gray-400 font-normal">(khusus mahasiswa)</span>
+                    </label>
+                    <input type="text" name="kelas" value="{{ old('kelas', $user->kelas) }}"
+                           placeholder="A"
+                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+
                 {{-- Status --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1.5">Status Aktif</label>

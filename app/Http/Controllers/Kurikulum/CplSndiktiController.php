@@ -4,7 +4,10 @@ namespace App\Http\Controllers\Kurikulum;
 use App\Http\Controllers\Controller;
 use App\Models\CplSndikti;
 use App\Models\Kurikulum;
+use App\Services\ExcelExportService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class CplSndiktiController extends Controller
 {
@@ -78,5 +81,67 @@ class CplSndiktiController extends Controller
         return redirect()
             ->route('kurikulum.cpl-sndikti.index', $kurikulum)
             ->with('success', 'CPL SN-Dikti berhasil dihapus.');
+    }
+
+    public function export(Kurikulum $kurikulum, ExcelExportService $excel)
+    {
+        $cplsnList = CplSndikti::orderByRaw("FIELD(kategori,'Sikap','Keterampilan Umum','Keterampilan Khusus','Pengetahuan')")
+            ->orderBy('urutan')
+            ->get();
+
+        $headerRow = [
+            ['label' => 'No', 'bg' => 'F59E0B'],
+            ['label' => 'Kategori', 'bg' => 'F59E0B'],
+            ['label' => 'Kode', 'bg' => 'F59E0B'],
+            ['label' => 'Deskripsi', 'bg' => 'F59E0B'],
+            ['label' => 'Status', 'bg' => 'F59E0B'],
+        ];
+
+        $rows = $cplsnList->map(fn ($cplsn, $i) => [
+            $i + 1,
+            $cplsn->kategori,
+            $cplsn->kode,
+            $cplsn->deskripsi,
+            ucfirst($cplsn->status ?? 'draft'),
+        ])->all();
+
+        return $excel->download("cpl-sndikti-{$kurikulum->kode}.xlsx", [
+            'CPL SN-Dikti' => [
+                'headerRows' => [$headerRow],
+                'rows'       => $rows,
+                'colWidths'  => [5, 22, 14, 70, 12],
+            ],
+        ]);
+    }
+
+    public function approve(Kurikulum $kurikulum, CplSndikti $cplSndikti)
+    {
+        Gate::authorize('arsip-kurikulum');
+
+        $cplSndikti->update([
+            'status'      => 'approved',
+            'approved_by' => Auth::id(),
+            'approved_at' => now(),
+        ]);
+
+        return redirect()
+            ->route('kurikulum.cpl-sndikti.index', $kurikulum)
+            ->with('success', "CPL SN-Dikti {$cplSndikti->kode} berhasil disetujui.");
+    }
+
+    public function batchApprove(Request $request, Kurikulum $kurikulum)
+    {
+        Gate::authorize('arsip-kurikulum');
+
+        $ids = array_filter(array_map('intval', $request->input('ids', [])));
+        if (empty($ids)) {
+            return back()->with('error', 'Pilih setidaknya satu CPL SN-Dikti.');
+        }
+
+        $count = \App\Models\CplSndikti::whereIn('id', $ids)
+            ->where('status', 'draft')
+            ->update(['status' => 'approved', 'approved_by' => Auth::id(), 'approved_at' => now()]);
+
+        return back()->with('success', "$count CPL SN-Dikti berhasil disetujui.");
     }
 }

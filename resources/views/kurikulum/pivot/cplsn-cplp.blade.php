@@ -11,6 +11,10 @@
     <span class="text-gray-700 font-medium">Matriks CPL-SN ↔ CPL-P</span>
 @endsection
 
+@section('header-actions')
+    @include('layouts._export-button', ['route' => route('kurikulum.pivot.cplsn-cplp.export', $kurikulum)])
+@endsection
+
 @section('content')
 
 @if ($cplsnList->isEmpty() || $cplpList->isEmpty())
@@ -55,6 +59,14 @@
         </div>
     </div>
 </details>
+
+{{-- Auto-fill referensi info --}}
+<div class="mb-3 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3 text-xs text-blue-800 flex items-start gap-2.5">
+    <svg class="w-4 h-4 text-blue-400 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span>Setiap perubahan pemetaan di matriks ini akan <strong>otomatis memperbarui kolom Referensi</strong> pada halaman CPL Prodi dengan kode CPL SN-Dikti yang terpetakan.</span>
+</div>
 
 <div class="flex items-center gap-3 text-xs text-gray-500 mb-3">
     <span class="flex items-center gap-1.5">

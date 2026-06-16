@@ -44,14 +44,14 @@
                 <label class="block text-sm font-medium text-gray-700 mb-1.5">
                     Mata Kuliah <span class="text-red-500">*</span>
                 </label>
-                <select name="id_mk" required
+                <select name="id_mk" id="id_mk" required
                         class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 {{ $errors->has('id_mk') ? 'border-red-400' : '' }}">
                     <option value="">— Pilih Mata Kuliah —</option>
                     @foreach ($mkList->groupBy('semester') as $smt => $mks)
                         <optgroup label="Semester {{ $smt }}">
                             @foreach ($mks as $mk)
                                 <option value="{{ $mk->id }}" {{ old('id_mk') == $mk->id ? 'selected' : '' }}>
-                                    {{ $mk->kode_mk }} — {{ $mk->nama_mk }} ({{ $mk->sks_total }} SKS)
+                                    {{ $mk->kode_mk }} — {{ $mk->nama_mk }}
                                 </option>
                             @endforeach
                         </optgroup>
@@ -60,6 +60,9 @@
                 @error('id_mk')<p class="text-xs text-red-500 mt-1">{{ $message }}</p>@enderror
             </div>
         </div>
+
+        {{-- Warning: tidak ada dosen pengampu --}}
+        <div id="pengampu-warning" class="hidden rounded-xl border px-4 py-3 text-sm"></div>
 
         {{-- Status --}}
         <div class="max-w-xs">
@@ -133,6 +136,37 @@
 @push('scripts')
 <script>
 (function(){
+    // Pengampuan map dari server: {semId: {mkId: [dosenNames...]}}
+    const pengampuanMap = @json($pengampuanBySmtMk);
+
+    const smtSelect  = document.getElementById ? document.querySelector('select[name="id_semester"]') : null;
+    const mkSelect   = document.getElementById('id_mk');
+    const warningEl  = document.getElementById('pengampu-warning');
+
+    function checkPengampu() {
+        if (!smtSelect || !mkSelect || !warningEl) return;
+        const semId = smtSelect.value;
+        const mkId  = mkSelect.value;
+        if (!semId || !mkId) { warningEl.className = 'hidden'; return; }
+
+        const smtMap = pengampuanMap[semId] || {};
+        const dosens = smtMap[mkId] || [];
+
+        if (dosens.length === 0) {
+            warningEl.className = 'rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800';
+            warningEl.innerHTML = '<strong>Perhatian:</strong> MK ini belum memiliki dosen pengampu untuk semester yang dipilih. '
+                + 'Mahasiswa yang didaftarkan tidak akan terlihat oleh dosen. '
+                + 'Tambahkan pengampu MK terlebih dahulu melalui menu <a href="{{ route("kaprodi.pengampuan.index") }}" class="underline font-medium">Pengampuan MK</a>.';
+        } else {
+            warningEl.className = 'rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800';
+            warningEl.innerHTML = '<strong>Pengampu:</strong> ' + dosens.join(', ');
+        }
+    }
+
+    if (smtSelect) smtSelect.addEventListener('change', checkPengampu);
+    if (mkSelect)  mkSelect.addEventListener('change', checkPengampu);
+    checkPengampu(); // run on load in case old() values are set
+
     const checkboxes = document.querySelectorAll('input[name="id_mahasiswa[]"]');
     const countEl    = document.getElementById('selected-count');
     const searchEl   = document.getElementById('mhs-search');

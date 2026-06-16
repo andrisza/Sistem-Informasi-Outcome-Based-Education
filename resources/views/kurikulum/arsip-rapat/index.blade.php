@@ -12,7 +12,7 @@
 @endsection
 
 @section('header-actions')
-    @if (!$kurikulum->isArsip())
+    @if (!$kurikulum->isArsip() && $hasAny)
         <a href="{{ route('kurikulum.arsip-rapat.create', $kurikulum) }}"
            class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors">
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -25,93 +25,31 @@
 
 @section('content')
 
-@php
-$jenisLabel = [
-    'pleno_kurikulum'   => ['label' => 'Pleno Kurikulum',   'color' => 'blue'],
-    'rapat_tim_kecil'   => ['label' => 'Rapat Tim Kecil',   'color' => 'violet'],
-    'rapat_stakeholder' => ['label' => 'Rapat Stakeholder', 'color' => 'emerald'],
-    'rapat_evaluasi'    => ['label' => 'Rapat Evaluasi',    'color' => 'amber'],
-    'rapat_cqi'         => ['label' => 'Rapat CQI',         'color' => 'red'],
-    'rapat_lainnya'     => ['label' => 'Rapat Lainnya',     'color' => 'gray'],
-];
-$jenisColors = [
-    'blue'    => 'bg-blue-100 text-blue-700',
-    'violet'  => 'bg-violet-100 text-violet-700',
-    'emerald' => 'bg-emerald-100 text-emerald-700',
-    'amber'   => 'bg-amber-100 text-amber-700',
-    'red'     => 'bg-red-100 text-red-700',
-    'gray'    => 'bg-gray-100 text-gray-600',
-];
-@endphp
-
-{{-- Filter bar --}}
-<div class="bg-white rounded-xl border border-gray-100 shadow-sm mb-5">
-    <form method="GET" action="{{ route('kurikulum.arsip-rapat.index', $kurikulum) }}"
-          class="flex flex-wrap items-center gap-3 px-4 py-3">
-        <select name="jenis"
-                class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 text-gray-700">
-            <option value="">Semua Jenis Rapat</option>
-            @foreach ($jenisLabel as $key => $cfg)
-                <option value="{{ $key }}" {{ request('jenis') === $key ? 'selected' : '' }}>
-                    {{ $cfg['label'] }}
-                </option>
-            @endforeach
-        </select>
-        <button type="submit"
-                class="inline-flex items-center gap-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
-            @include('layouts._icon', ['name' => 'filter', 'class' => 'w-3.5 h-3.5'])
-            Filter
-        </button>
-        @if (request()->anyFilled(['jenis']))
-            <a href="{{ route('kurikulum.arsip-rapat.index', $kurikulum) }}"
-               class="text-sm text-gray-400 hover:text-gray-600">Reset</a>
-        @endif
-
-        {{-- Summary stats --}}
-        <div class="ml-auto flex flex-wrap items-center gap-2">
-            @foreach ($jenisLabel as $key => $cfg)
-                @php $cnt = $jenisCounts[$key] ?? 0; @endphp
-                @if ($cnt > 0)
-                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium {{ $jenisColors[$cfg['color']] }}"
-                          data-tooltip="Terdapat {{ $cnt }} dokumen {{ $cfg['label'] }}"
-                          data-tip-label="Jenis Rapat">
-                        {{ $cnt }} {{ $cfg['label'] }}
-                    </span>
-                @endif
-            @endforeach
-        </div>
-    </form>
-</div>
-
-{{-- Card / Table view --}}
 @if ($arsipList->isEmpty())
-    <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-16 text-center">
-        <div class="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center mx-auto mb-3">
-            @include('layouts._icon', ['name' => 'meeting', 'class' => 'w-6 h-6 text-gray-400'])
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm px-5 py-20 flex flex-col items-center justify-center text-center">
+        <div class="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center mb-4">
+            <svg class="w-7 h-7 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+            </svg>
         </div>
-        <p class="text-gray-500 font-medium text-sm">Belum ada arsip rapat.</p>
+        <p class="text-gray-800 font-semibold text-base mb-1">Belum ada arsip rapat</p>
+        <p class="text-sm text-gray-400 mb-6">Dokumentasikan rapat kurikulum pertama Anda di sini.</p>
         @if (!$kurikulum->isArsip())
-            <p class="text-xs text-gray-400 mt-1">
-                <a href="{{ route('kurikulum.arsip-rapat.create', $kurikulum) }}" class="text-blue-600 hover:underline font-medium">Tambah arsip rapat pertama →</a>
-            </p>
+            <a href="{{ route('kurikulum.arsip-rapat.create', $kurikulum) }}"
+               class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2.5 rounded-lg transition-colors">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                </svg>
+                Buat Arsip Rapat
+            </a>
         @endif
     </div>
 @else
     <div class="space-y-3">
         @foreach ($arsipList as $arsip)
             @php
-                $jCfg = $jenisLabel[$arsip->jenis_rapat] ?? ['label' => $arsip->jenis_rapat, 'color' => 'gray'];
-                $jColor = $jenisColors[$jCfg['color']];
-
-                // Checklist: completeness of document fields
-                $fields = [
-                    'agenda'        => ['label' => 'Agenda',        'val' => $arsip->agenda],
-                    'notulen'       => ['label' => 'Notulen',       'val' => $arsip->notulen],
-                    'kesimpulan'    => ['label' => 'Kesimpulan',     'val' => $arsip->kesimpulan],
-                    'tindak_lanjut' => ['label' => 'Tindak Lanjut', 'val' => $arsip->tindak_lanjut],
-                ];
-                $fieldsDone = collect($fields)->filter(fn($f) => !empty($f['val']))->count();
-                $fieldsTotal = count($fields);
+                $hasCatatan = !empty($arsip->notulen);
+                $fileCnt    = count($arsip->file_lampiran ?? []);
             @endphp
 
             <div class="bg-white rounded-xl border border-gray-100 shadow-sm hover:border-blue-200 hover:shadow-md transition-all">
@@ -125,16 +63,13 @@ $jenisColors = [
 
                     {{-- Main content --}}
                     <div class="flex-1 min-w-0">
-                        <div class="flex flex-wrap items-start justify-between gap-2 mb-1.5">
+                        <div class="flex flex-wrap items-start justify-between gap-2 mb-1">
                             <div class="min-w-0">
                                 <a href="{{ route('kurikulum.arsip-rapat.show', [$kurikulum, $arsip]) }}"
                                    class="font-semibold text-gray-800 text-sm hover:text-blue-600 transition-colors block truncate">
                                     {{ $arsip->judul_rapat }}
                                 </a>
                                 <div class="flex flex-wrap items-center gap-2 mt-1">
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $jColor }}">
-                                        {{ $jCfg['label'] }}
-                                    </span>
                                     @if ($arsip->tempat)
                                         <span class="text-xs text-gray-400 flex items-center gap-1">
                                             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -150,34 +85,25 @@ $jenisColors = [
                                 </div>
                             </div>
 
-                            {{-- Document completeness --}}
-                            <div class="shrink-0 flex items-center gap-2"
-                                 data-tooltip="Kelengkapan dokumen: {{ $fieldsDone }}/{{ $fieldsTotal }} bagian terisi (Agenda, Notulen, Kesimpulan, Tindak Lanjut)"
-                                 data-tip-label="Kelengkapan Dokumen">
-                                <div class="flex items-center gap-0.5">
-                                    @foreach ($fields as $fKey => $fData)
-                                        <div class="w-2.5 h-2.5 rounded-sm {{ !empty($fData['val']) ? 'bg-emerald-500' : 'bg-gray-200' }}"
-                                             title="{{ $fData['label'] }}: {{ !empty($fData['val']) ? 'Terisi' : 'Kosong' }}"></div>
-                                    @endforeach
-                                </div>
-                                <span class="text-xs text-gray-400">{{ $fieldsDone }}/{{ $fieldsTotal }}</span>
-                            </div>
-                        </div>
-
-                        {{-- Field indicators --}}
-                        <div class="flex flex-wrap items-center gap-2 mt-2">
-                            @foreach ($fields as $fKey => $fData)
-                                <span class="inline-flex items-center gap-1 text-[10px] font-medium {{ !empty($fData['val']) ? 'text-emerald-600' : 'text-gray-300' }}">
-                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ !empty($fData['val']) ? 2.5 : 1.5 }}">
-                                        @if (!empty($fData['val']))
+                            {{-- Indikator catatan & file --}}
+                            <div class="shrink-0 flex items-center gap-2">
+                                <span class="inline-flex items-center gap-1 text-[10px] font-medium {{ $hasCatatan ? 'text-emerald-600' : 'text-gray-300' }}">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $hasCatatan ? 2.5 : 1.5 }}">
+                                        @if ($hasCatatan)
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
                                         @else
                                             <circle cx="12" cy="12" r="9"/>
                                         @endif
                                     </svg>
-                                    {{ $fData['label'] }}
+                                    Catatan
                                 </span>
-                            @endforeach
+                                <span class="inline-flex items-center gap-1 text-[10px] font-medium {{ $fileCnt > 0 ? 'text-blue-600' : 'text-gray-300' }}">
+                                    <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="{{ $fileCnt > 0 ? 2 : 1.5 }}">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                                    </svg>
+                                    {{ $fileCnt > 0 ? $fileCnt . ' file' : 'Bukti' }}
+                                </span>
+                            </div>
                         </div>
                     </div>
 

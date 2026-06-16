@@ -11,6 +11,17 @@
 @endsection
 
 @section('header-actions')
+    @include('layouts._export-button', ['route' => route('kurikulum.cpl-sndikti.export', $kurikulum)])
+    @if (auth()->user()->role->value === 'kaprodi' && !$kurikulum->isArsip())
+        <button type="submit" form="batch-approve-form" id="batch-btn"
+                class="hidden inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+            Setujui Terpilih
+            <span id="batch-count" class="bg-white text-green-700 text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"></span>
+        </button>
+    @endif
     <a href="{{ route('kurikulum.cpl-sndikti.create', $kurikulum) }}"
        class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -64,10 +75,17 @@
         <table class="w-full text-sm border-collapse">
             <thead>
                 <tr style="background:#F59E0B">
+                    @if (auth()->user()->role->value === 'kaprodi' && !$kurikulum->isArsip())
+                    <th class="px-3 py-3 text-center text-xs font-bold text-white border border-amber-300 w-8">
+                        <input type="checkbox" id="select-all" title="Pilih semua draft"
+                               class="accent-amber-300 w-4 h-4 cursor-pointer rounded">
+                    </th>
+                    @endif
                     <th class="px-3 py-3 text-center text-xs font-bold text-white border border-amber-300 w-10">No</th>
                     <th class="px-4 py-3 text-center text-xs font-bold text-white border border-amber-300 w-28">Kode CPL SN</th>
                     <th class="px-4 py-3 text-left text-xs font-bold text-white border border-amber-300">Deskripsi</th>
-                    <th class="px-3 py-3 text-center text-xs font-bold text-white border border-amber-300 w-20">Aksi</th>
+                    <th class="px-4 py-3 text-center text-xs font-bold text-white border border-amber-300 w-24">Status</th>
+                    <th class="px-3 py-3 text-center text-xs font-bold text-white border border-amber-300 w-24">Aksi</th>
                 </tr>
             </thead>
             <tbody>
@@ -78,7 +96,7 @@
 
                     {{-- Kategori header --}}
                     <tr>
-                        <td colspan="4"
+                        <td colspan="{{ auth()->user()->role->value === 'kaprodi' && !$kurikulum->isArsip() ? 6 : 5 }}"
                             class="px-4 py-2 text-xs font-bold uppercase tracking-wider border border-gray-200"
                             style="background:{{ $cc['header'] }};color:#fff">
                             {{ $katLabels[$kat] }}
@@ -89,6 +107,14 @@
                     @foreach ($items->values() as $i => $cplsn)
                         <tr class="hover:opacity-90 transition-opacity border-b border-gray-100"
                             style="background:{{ $i % 2 === 0 ? $cc['rowA'] : $cc['rowB'] }}">
+                            @if (auth()->user()->role->value === 'kaprodi' && !$kurikulum->isArsip())
+                            <td class="px-3 py-3 text-center border border-gray-100">
+                                @if (($cplsn->status ?? 'draft') === 'draft')
+                                    <input type="checkbox" name="ids[]" value="{{ $cplsn->id }}"
+                                           form="batch-approve-form" class="batch-check accent-amber-500 w-4 h-4 cursor-pointer rounded">
+                                @endif
+                            </td>
+                            @endif
                             <td class="px-3 py-3 text-center text-xs text-gray-500 border border-gray-100 font-medium">
                                 {{ $i + 1 }}
                             </td>
@@ -99,8 +125,26 @@
                             <td class="px-4 py-3 text-gray-700 text-sm border border-gray-100 leading-relaxed">
                                 {{ $cplsn->deskripsi }}
                             </td>
+                            <td class="px-4 py-3 text-center border border-gray-100">
+                                @if (($cplsn->status ?? 'draft') === 'approved')
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Approved</span>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500">Draft</span>
+                                @endif
+                            </td>
                             <td class="px-3 py-3 border border-gray-100">
-                                <div class="flex items-center justify-center gap-1">
+                                <div class="flex items-center justify-center gap-1 flex-wrap">
+                                    @if (auth()->user()->role->value === 'kaprodi' && ($cplsn->status ?? 'draft') === 'draft' && !$kurikulum->isArsip())
+                                        <form method="POST" action="{{ route('kurikulum.cpl-sndikti.approve', [$kurikulum, $cplsn]) }}"
+                                              onsubmit="return confirm('Setujui {{ $cplsn->kode }}?')">
+                                            @csrf
+                                            <button type="submit" class="p-1.5 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded transition-colors" title="Approve">
+                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    @endif
                                     <a href="{{ route('kurikulum.cpl-sndikti.edit', [$kurikulum, $cplsn]) }}"
                                        class="p-1.5 text-gray-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors" title="Edit">
                                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -128,4 +172,41 @@
 
 @endif
 
+@if (auth()->user()->role->value === 'kaprodi' && !$kurikulum->isArsip())
+<form id="batch-approve-form" method="POST" action="{{ route('kurikulum.cpl-sndikti.batch-approve', $kurikulum) }}">
+    @csrf
+</form>
+@endif
+
 @endsection
+
+@push('scripts')
+<script>
+(function() {
+    const selectAll  = document.getElementById('select-all');
+    const batchBtn   = document.getElementById('batch-btn');
+    const batchCount = document.getElementById('batch-count');
+
+    function updateBatch() {
+        const checks  = document.querySelectorAll('.batch-check');
+        const checked = document.querySelectorAll('.batch-check:checked');
+        const n = checked.length;
+        if (batchBtn) {
+            batchBtn.classList.toggle('hidden', n === 0);
+            if (batchCount) batchCount.textContent = n;
+        }
+        if (selectAll) {
+            selectAll.checked       = checks.length > 0 && n === checks.length;
+            selectAll.indeterminate = n > 0 && n < checks.length;
+        }
+    }
+
+    selectAll?.addEventListener('change', function () {
+        document.querySelectorAll('.batch-check').forEach(cb => { cb.checked = this.checked; });
+        updateBatch();
+    });
+
+    document.querySelectorAll('.batch-check').forEach(cb => cb.addEventListener('change', updateBatch));
+})();
+</script>
+@endpush

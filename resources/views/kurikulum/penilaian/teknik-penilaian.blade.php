@@ -10,16 +10,11 @@
     <span class="text-gray-700 font-medium">Teknik Penilaian</span>
 @endsection
 
-@section('content')
+@section('header-actions')
+    @include('layouts._export-button', ['route' => route('kurikulum.penilaian.teknik.export', $kurikulum)])
+@endsection
 
-@if (session('success'))
-    <div class="mb-4 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3 text-sm text-emerald-800">
-        <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
-        </svg>
-        {{ session('success') }}
-    </div>
-@endif
+@section('content')
 
 @if ($byCpl->isEmpty())
     <div class="bg-blue-50 border border-blue-200 rounded-xl px-5 py-5 text-sm text-blue-800">
@@ -84,9 +79,9 @@
                             {{-- MK --}}
                             <td class="px-3 py-2.5 text-center border border-blue-100 align-middle">
                                 <span class="font-mono font-bold text-[10px] text-blue-700 cursor-help"
-                                      data-tooltip="{{ $cpmk->mataKuliah->kode_mk ?? '—' }}: {{ $cpmk->mataKuliah->nama_mk ?? '' }} (Smt {{ $cpmk->mataKuliah->semester ?? '?' }})"
+                                      data-tooltip="{{ $cpmk->mataKuliah?->kode_mk ?? '—' }}: {{ $cpmk->mataKuliah?->nama_mk ?? '' }} (Smt {{ $cpmk->mataKuliah?->semester ?? '?' }})"
                                       data-tip-label="Mata Kuliah">
-                                    {{ $cpmk->mataKuliah->kode_mk ?? '—' }}
+                                    {{ $cpmk->mataKuliah?->kode_mk ?? '—' }}
                                 </span>
                             </td>
 

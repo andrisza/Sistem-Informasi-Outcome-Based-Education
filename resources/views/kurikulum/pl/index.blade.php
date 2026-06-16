@@ -12,6 +12,17 @@
 @endsection
 
 @section('header-actions')
+    @include('layouts._export-button', ['route' => route('kurikulum.pl.export', $kurikulum)])
+    @if (auth()->user()->role->value === 'kaprodi' && !$kurikulum->isArsip())
+        <button type="submit" form="batch-approve-form" id="batch-btn"
+                class="hidden inline-flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors shadow-sm">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+            Setujui Terpilih
+            <span id="batch-count" class="bg-white text-green-700 text-xs font-bold px-1.5 py-0.5 rounded-full min-w-[18px] text-center"></span>
+        </button>
+    @endif
     @if (!$kurikulum->isArsip())
         <a href="{{ route('kurikulum.pl.create', $kurikulum) }}"
            class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors shadow-sm">
@@ -39,6 +50,12 @@
         <table class="w-full text-sm border-collapse obe-list-table">
             <thead>
                 <tr style="background:#F59E0B">
+                    @if (auth()->user()->role->value === 'kaprodi' && !$kurikulum->isArsip())
+                    <th class="px-3 py-3 text-center text-xs font-bold text-white border border-amber-300 w-8">
+                        <input type="checkbox" id="select-all" title="Pilih semua draft"
+                               class="accent-amber-300 w-4 h-4 cursor-pointer rounded">
+                    </th>
+                    @endif
                     <th class="px-3 py-3 text-center text-xs font-bold text-white border border-amber-300 w-10">No</th>
                     <th class="px-4 py-3 text-center text-xs font-bold text-white border border-amber-300 w-24">Kode PL</th>
                     <th class="px-4 py-3 text-left text-xs font-bold text-white border border-amber-300">Profil Lulusan (PL)</th>
@@ -53,6 +70,14 @@
             <tbody>
                 @forelse ($plList as $pl)
                     <tr class="border-b border-amber-100 hover:bg-amber-50 transition-colors" style="{{ $loop->even ? 'background:#fffbeb' : 'background:#fff' }}">
+                        @if (auth()->user()->role->value === 'kaprodi' && !$kurikulum->isArsip())
+                        <td class="px-3 py-3 text-center border border-amber-100">
+                            @if (($pl->status ?? 'draft') === 'draft')
+                                <input type="checkbox" name="ids[]" value="{{ $pl->id }}"
+                                       form="batch-approve-form" class="batch-check accent-amber-500 w-4 h-4 cursor-pointer rounded">
+                            @endif
+                        </td>
+                        @endif
                         <td class="px-3 py-3 text-center text-xs text-gray-500 border border-amber-100 font-medium">{{ $pl->urutan }}</td>
                         <td class="px-4 py-3 text-center border border-amber-100">
                             <span class="font-mono font-bold text-amber-800 text-xs bg-amber-100 px-2 py-0.5 rounded cursor-help"
@@ -120,7 +145,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="{{ $kurikulum->isArsip() ? 6 : 7 }}" class="px-5 py-14 text-center text-sm text-gray-400 bg-amber-50/30">
+                        <td colspan="{{ $kurikulum->isArsip() ? 6 : (auth()->user()->role->value === 'kaprodi' ? 8 : 7) }}" class="px-5 py-14 text-center text-sm text-gray-400 bg-amber-50/30">
                             <div class="flex flex-col items-center gap-2">
                                 <svg class="w-10 h-10 text-amber-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -138,4 +163,41 @@
     </div>
 </div>
 
+@if (auth()->user()->role->value === 'kaprodi' && !$kurikulum->isArsip())
+<form id="batch-approve-form" method="POST" action="{{ route('kurikulum.pl.batch-approve', $kurikulum) }}">
+    @csrf
+</form>
+@endif
+
 @endsection
+
+@push('scripts')
+<script>
+(function() {
+    const selectAll  = document.getElementById('select-all');
+    const batchBtn   = document.getElementById('batch-btn');
+    const batchCount = document.getElementById('batch-count');
+
+    function updateBatch() {
+        const checks  = document.querySelectorAll('.batch-check');
+        const checked = document.querySelectorAll('.batch-check:checked');
+        const n = checked.length;
+        if (batchBtn) {
+            batchBtn.classList.toggle('hidden', n === 0);
+            if (batchCount) batchCount.textContent = n;
+        }
+        if (selectAll) {
+            selectAll.checked       = checks.length > 0 && n === checks.length;
+            selectAll.indeterminate = n > 0 && n < checks.length;
+        }
+    }
+
+    selectAll?.addEventListener('change', function () {
+        document.querySelectorAll('.batch-check').forEach(cb => { cb.checked = this.checked; });
+        updateBatch();
+    });
+
+    document.querySelectorAll('.batch-check').forEach(cb => cb.addEventListener('change', updateBatch));
+})();
+</script>
+@endpush

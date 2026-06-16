@@ -80,7 +80,7 @@ class KurikulumController extends Controller
 
     public function show(Kurikulum $kurikulum)
     {
-        $kurikulum->loadCount(['pl', 'cplProdi', 'bahanKajian', 'mataKuliah', 'periode', 'arsipRapat']);
+        $kurikulum->loadCount(['pl', 'cplProdi', 'bahanKajian', 'mataKuliah', 'arsipRapat', 'distribusiSemester']);
 
         return view('kurikulum.show', compact('kurikulum'));
     }
