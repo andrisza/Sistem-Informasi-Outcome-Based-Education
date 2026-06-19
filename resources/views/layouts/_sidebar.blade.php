@@ -119,10 +119,9 @@
                 ['label' => 'Rekap Nilai per MK',      'route' => 'kurikulum.penilaian.rekap-nilai',     'icon' => 'document-report', 'params' => [$kurikulumCtx]],
             ]],
 
-            // Evaluasi & Laporan — proses penilaian & evaluasi CPL per CPL, dan assessment lintas CPL/MK
+            // Evaluasi & Laporan
             ['group' => 'Evaluasi & Laporan', 'icon' => 'document-report', 'children' => [
                 ['label' => 'Proses Penilaian dan Evaluasi CPL', 'route' => 'kurikulum.penilaian.evaluasi-cpl', 'icon' => 'document-report', 'params' => [$kurikulumCtx]],
-                ['label' => 'Assessment terhadap CPL dan MK', 'route' => 'kurikulum.penilaian.rekap-cpl',   'icon' => 'table',        'params' => [$kurikulumCtx]],
             ]],
 
             // Administrasi — arsip dan pengelolaan tim

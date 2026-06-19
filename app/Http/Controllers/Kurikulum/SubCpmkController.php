@@ -32,8 +32,10 @@ class SubCpmkController extends Controller
         $validated = $request->validate([
             'kode_sub_cpmk' => 'nullable|string|max:50',
             'deskripsi'     => 'required|string',
-            'bobot'         => 'required|numeric|min:0|max:100',
+            'bobot'         => 'nullable|numeric|min:0|max:100',
         ]);
+
+        $validated['bobot'] ??= 0;
 
         if (empty($validated['kode_sub_cpmk'])) {
             $validated['kode_sub_cpmk'] = $this->generateKodeSubCpmk($cpmk);

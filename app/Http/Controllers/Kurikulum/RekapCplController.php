@@ -19,40 +19,6 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class RekapCplController extends Controller
 {
-    public function index(Kurikulum $kurikulum, Request $request)
-    {
-        $semesterList = SemesterAkademik::orderByDesc('id')->get();
-        $semester = $this->resolveSemester($request, $semesterList);
-        $filters = $this->resolveFilters($request);
-        $filterOptions = $this->resolveFilterOptions($kurikulum, $semester);
-
-        [$mkGroups, $cplAggGroups, $columnLayout, $mahasiswaList, $valueGrid, $totalRow] =
-            $this->buildGrid($kurikulum, $semester, null, $filters);
-
-        return view('kurikulum.penilaian.rekap-cpl', compact(
-            'kurikulum', 'semester', 'semesterList',
-            'mkGroups', 'cplAggGroups', 'columnLayout',
-            'mahasiswaList', 'valueGrid', 'totalRow',
-            'filters', 'filterOptions',
-        ));
-    }
-
-    public function export(Kurikulum $kurikulum, Request $request, ExcelExportService $excel)
-    {
-        $semesterList = SemesterAkademik::orderByDesc('id')->get();
-        $semester = $this->resolveSemester($request, $semesterList);
-        $filters = $this->resolveFilters($request);
-
-        [$mkGroups, $cplAggGroups, $columnLayout, $mahasiswaList, $valueGrid, $totalRow] =
-            $this->buildGrid($kurikulum, $semester, null, $filters);
-
-        $sheet = $this->buildSheetData($mkGroups, $cplAggGroups, $columnLayout, $mahasiswaList, $valueGrid, $totalRow);
-
-        return $excel->download("rekap-capaian-cpl-{$kurikulum->kode}.xlsx", [
-            'Tabel L' => $sheet,
-        ]);
-    }
-
     /**
      * Tabel K — Proses Penilaian & Evaluasi CPL: drill-down per satu CPL Prodi,
      * menampilkan MK-MK yang berkontribusi pada CPL tersebut beserta agregasi capaiannya.
@@ -64,10 +30,21 @@ class RekapCplController extends Controller
         $filters = $this->resolveFilters($request);
         $filterOptions = $this->resolveFilterOptions($kurikulum, $semester);
 
-        [$cplOptions, $selectedCpl] = $this->resolveCplSelection($kurikulum, $semester, $request);
+        // Dosen hanya melihat MK yang diampu di semester ini; kaprodi melihat semua
+        $user = auth()->user();
+        $allowedMkIds = null;
+        if ($user->role->value === 'dosen' && $semester) {
+            $allowedMkIds = DB::table('pengampuan_mk')
+                ->where('id_dosen', $user->id)
+                ->where('id_semester', $semester->id)
+                ->pluck('id_mk')
+                ->toArray();
+        }
+
+        [$cplOptions, $selectedCpl] = $this->resolveCplSelection($kurikulum, $semester, $request, $allowedMkIds);
 
         [$mkGroups, $cplAggGroups, $columnLayout, $mahasiswaList, $valueGrid, $totalRow] = $selectedCpl
-            ? $this->buildGrid($kurikulum, $semester, $selectedCpl->id, $filters)
+            ? $this->buildGrid($kurikulum, $semester, $selectedCpl->id, $filters, $allowedMkIds)
             : [[], [], [], collect(), [], []];
 
         return view('kurikulum.penilaian.rekap-cpl-proses', compact(
@@ -76,6 +53,7 @@ class RekapCplController extends Controller
             'mkGroups', 'cplAggGroups', 'columnLayout',
             'mahasiswaList', 'valueGrid', 'totalRow',
             'filters', 'filterOptions',
+            'allowedMkIds',
         ));
     }
 
@@ -97,27 +75,6 @@ class RekapCplController extends Controller
         return $excel->download("proses-evaluasi-cpl-{$selectedCpl->kode_cpl}-{$kurikulum->kode}.xlsx", [
             "Tabel K - {$selectedCpl->kode_cpl}" => $sheet,
         ]);
-    }
-
-    public function import(Kurikulum $kurikulum, Request $request)
-    {
-        $request->validate([
-            'semester' => 'required|integer|exists:semester_akademik,id',
-            'file'     => 'required|file|mimes:xlsx,xls|max:10240',
-        ]);
-
-        $semester = SemesterAkademik::find($request->semester);
-
-        [, , $columnLayout, , , ] = $this->buildGrid($kurikulum, $semester, null);
-
-        $result = $this->performImport($columnLayout, $semester, $request);
-
-        $filters = $this->resolveFilters($request);
-
-        return redirect()->route('kurikulum.penilaian.rekap-cpl', array_merge(
-            ['kurikulum' => $kurikulum, 'semester' => $semester->id],
-            array_filter($filters)
-        ))->with($result['status'], $result['message']);
     }
 
     /**
@@ -215,7 +172,7 @@ class RekapCplController extends Controller
                             'id_cpmk'      => $col['cpmk']->id,
                             'id_semester'  => $semester->id,
                         ],
-                        ['nilai' => $nilaiCpmk]
+                        ['nilai' => $nilaiCpmk, 'status_tercapai' => $nilaiCpmk >= 70]
                     );
 
                     $updated++;
@@ -270,9 +227,9 @@ class RekapCplController extends Controller
      *
      * @return array{0: \Illuminate\Support\Collection, 1: ?\App\Models\CplProdi}
      */
-    private function resolveCplSelection(Kurikulum $kurikulum, ?SemesterAkademik $semester, Request $request): array
+    private function resolveCplSelection(Kurikulum $kurikulum, ?SemesterAkademik $semester, Request $request, ?array $allowedMkIds = null): array
     {
-        [, $allCplAggGroups] = $this->buildGrid($kurikulum, $semester, null);
+        [, $allCplAggGroups] = $this->buildGrid($kurikulum, $semester, null, [], $allowedMkIds);
         $cplOptions = collect($allCplAggGroups)->pluck('cpl')->values();
 
         $selectedCpl = null;
@@ -299,6 +256,7 @@ class RekapCplController extends Controller
             'tahun_masuk'   => $request->filled('tahun_masuk') ? (int) $request->tahun_masuk : null,
             'kelas'         => $request->filled('kelas') ? trim($request->kelas) : null,
             'program_studi' => $request->filled('program_studi') ? trim($request->program_studi) : null,
+            'mk_id'         => $request->filled('mk') ? (int) $request->mk : null,
         ];
     }
 
@@ -310,7 +268,7 @@ class RekapCplController extends Controller
      */
     private function resolveFilterOptions(Kurikulum $kurikulum, ?SemesterAkademik $semester): array
     {
-        $empty = ['tahun_masuk' => [], 'kelas' => [], 'program_studi' => []];
+        $empty = ['tahun_masuk' => [], 'kelas' => [], 'program_studi' => [], 'mk_list' => collect()];
 
         if (! $semester) {
             return $empty;
@@ -330,6 +288,7 @@ class RekapCplController extends Controller
             'tahun_masuk'   => $mahasiswa->pluck('tahun_masuk')->filter()->unique()->sort()->values()->all(),
             'kelas'         => $mahasiswa->pluck('kelas')->filter()->unique()->sort()->values()->all(),
             'program_studi' => $mahasiswa->pluck('program_studi')->filter()->unique()->sort()->values()->all(),
+            'mk_list'       => MataKuliah::whereIn('id', $mkIds)->orderBy('semester')->orderBy('kode_mk')->get(['id', 'kode_mk', 'nama_mk']),
         ];
     }
 
@@ -359,19 +318,29 @@ class RekapCplController extends Controller
      *
      * @return array{0: array, 1: array, 2: array, 3: \Illuminate\Support\Collection, 4: array, 5: array}
      */
-    private function buildGrid(Kurikulum $kurikulum, ?SemesterAkademik $semester, ?int $onlyCplId = null, array $filters = []): array
+    private function buildGrid(Kurikulum $kurikulum, ?SemesterAkademik $semester, ?int $onlyCplId = null, array $filters = [], ?array $allowedMkIds = null): array
     {
         if (! $semester) {
             return [[], [], [], collect(), [], []];
         }
 
+        $allMkIds = $kurikulum->mataKuliah()->pluck('id');
+        $mkIdsToQuery = $allowedMkIds !== null
+            ? $allMkIds->intersect($allowedMkIds)
+            : $allMkIds;
+
         $komponenAll = KomponenAsesmen::where('id_semester', $semester->id)
-            ->whereIn('id_mk', $kurikulum->mataKuliah()->pluck('id'))
+            ->whereIn('id_mk', $mkIdsToQuery)
             ->whereNotNull('id_sub_cpmk')
             ->get();
 
         $mkIds = $komponenAll->pluck('id_mk')->unique();
         $mkList = MataKuliah::whereIn('id', $mkIds)->orderBy('semester')->orderBy('kode_mk')->get();
+
+        if (! empty($filters['mk_id'])) {
+            $mkList = $mkList->where('id', $filters['mk_id'])->values();
+        }
+
         $komponenBySubCpmk = $komponenAll->groupBy('id_sub_cpmk');
 
         $cplList = $kurikulum->cplProdi()

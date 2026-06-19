@@ -22,11 +22,7 @@ class DashboardController extends Controller
             ->get();
 
         return view('kurikulum.dashboard', compact(
-            'totalKurikulum',
-            'kurikulumAktif',
-            'totalMk',
-            'totalDosen',
-            'kurikulumList'
+            'totalKurikulum', 'kurikulumAktif', 'totalMk', 'totalDosen', 'kurikulumList',
         ));
     }
 }

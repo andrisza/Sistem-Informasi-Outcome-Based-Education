@@ -11,10 +11,11 @@ class ArsipRapat extends Model
 
     protected $fillable = [
         'id_kurikulum',
-        'judul_rapat',
-        'tanggal_rapat',
+        'judul_kegiatan',
+        'tanggal',
         'tempat',
-        'notulen',
+        'temuan',
+        'tindak_lanjut',
         'file_lampiran',
         'dibuat_oleh',
     ];
@@ -22,7 +23,7 @@ class ArsipRapat extends Model
     protected function casts(): array
     {
         return [
-            'tanggal_rapat' => 'date',
+            'tanggal'      => 'date',
             'file_lampiran' => 'array',
         ];
     }

@@ -114,8 +114,19 @@ $mkPalette = [
                             <p class="text-[10px] text-gray-400">{{ $mhs->identifier ?? '-' }}</p>
                         </td>
                         @foreach ($columnLayout as $i => $col)
-                            @php $val = $valueGrid[$mhs->id][$i] ?? null; @endphp
-                            <td class="border border-gray-200 text-center p-1.5 text-gray-700">
+                            @php
+                                $val = $valueGrid[$mhs->id][$i] ?? null;
+                                $cellColor = '';
+                                if ($val !== null) {
+                                    if ($col['type'] === 'cpl_capaian') {
+                                        $cellColor = $val >= 70 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                                    } elseif ($col['type'] === 'cpmk') {
+                                        $pct = $col['skor_maks'] > 0 ? ($val / $col['skor_maks'] * 100) : 0;
+                                        $cellColor = $pct >= 70 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                                    }
+                                }
+                            @endphp
+                            <td class="border border-gray-200 text-center p-1.5 {{ $cellColor ?: 'text-gray-700' }}">
                                 {{ $val !== null ? $fmtNum($val) : '-' }}
                             </td>
                         @endforeach

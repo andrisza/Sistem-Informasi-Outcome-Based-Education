@@ -16,7 +16,7 @@ class ArsipRapatController extends Controller
         $hasAny    = $kurikulum->arsipRapat()->exists();
         $arsipList = $kurikulum->arsipRapat()
             ->with(['pembuat'])
-            ->orderBy('tanggal_rapat', 'desc')
+            ->orderBy('tanggal', 'desc')
             ->paginate(15);
 
         return view('kurikulum.arsip-rapat.index', compact('kurikulum', 'arsipList', 'hasAny'));
@@ -30,21 +30,23 @@ class ArsipRapatController extends Controller
     public function store(Request $request, Kurikulum $kurikulum)
     {
         $validated = $request->validate([
-            'judul_rapat'   => 'required|string|max:255',
-            'tanggal_rapat' => 'required|date',
-            'tempat'        => 'nullable|string|max:255',
-            'notulen'       => 'nullable|string',
-            'bukti_rapat'   => 'nullable|array|max:10',
-            'bukti_rapat.*' => 'file|max:20480|extensions:pdf,docx,png,jpg,jpeg,heic,heif',
+            'judul_kegiatan' => 'required|string|max:255',
+            'tanggal'        => 'required|date',
+            'tempat'         => 'nullable|string|max:255',
+            'temuan'         => 'nullable|string',
+            'tindak_lanjut'  => 'nullable|string',
+            'bukti_rapat'    => 'nullable|array|max:10',
+            'bukti_rapat.*'  => 'file|max:20480|extensions:pdf,docx,png,jpg,jpeg,heic,heif',
         ]);
 
         $arsip = ArsipRapat::create([
-            'id_kurikulum'  => $kurikulum->id,
-            'dibuat_oleh'   => Auth::id(),
-            'judul_rapat'   => $validated['judul_rapat'],
-            'tanggal_rapat' => $validated['tanggal_rapat'],
-            'tempat'        => $validated['tempat'] ?? null,
-            'notulen'       => $validated['notulen'] ?? null,
+            'id_kurikulum'   => $kurikulum->id,
+            'dibuat_oleh'    => Auth::id(),
+            'judul_kegiatan' => $validated['judul_kegiatan'],
+            'tanggal'        => $validated['tanggal'],
+            'tempat'         => $validated['tempat'] ?? null,
+            'temuan'         => $validated['temuan'] ?? null,
+            'tindak_lanjut'  => $validated['tindak_lanjut'] ?? null,
         ]);
 
         $this->storeFiles($request, $arsip);
@@ -68,14 +70,15 @@ class ArsipRapatController extends Controller
     public function update(Request $request, Kurikulum $kurikulum, ArsipRapat $arsipRapat)
     {
         $validated = $request->validate([
-            'judul_rapat'   => 'required|string|max:255',
-            'tanggal_rapat' => 'required|date',
-            'tempat'        => 'nullable|string|max:255',
-            'notulen'       => 'nullable|string',
-            'bukti_rapat'   => 'nullable|array|max:10',
-            'bukti_rapat.*' => 'file|max:20480|extensions:pdf,docx,png,jpg,jpeg,heic,heif',
-            'delete_files'  => 'nullable|array',
-            'delete_files.*'=> 'integer',
+            'judul_kegiatan' => 'required|string|max:255',
+            'tanggal'        => 'required|date',
+            'tempat'         => 'nullable|string|max:255',
+            'temuan'         => 'nullable|string',
+            'tindak_lanjut'  => 'nullable|string',
+            'bukti_rapat'    => 'nullable|array|max:10',
+            'bukti_rapat.*'  => 'file|max:20480|extensions:pdf,docx,png,jpg,jpeg,heic,heif',
+            'delete_files'   => 'nullable|array',
+            'delete_files.*' => 'integer',
         ]);
 
         // Hapus file yang ditandai
@@ -99,11 +102,12 @@ class ArsipRapatController extends Controller
         }
 
         $arsipRapat->update([
-            'judul_rapat'   => $validated['judul_rapat'],
-            'tanggal_rapat' => $validated['tanggal_rapat'],
-            'tempat'        => $validated['tempat'] ?? null,
-            'notulen'       => $validated['notulen'] ?? null,
-            'file_lampiran' => $kept ?: null,
+            'judul_kegiatan' => $validated['judul_kegiatan'],
+            'tanggal'        => $validated['tanggal'],
+            'tempat'         => $validated['tempat'] ?? null,
+            'temuan'         => $validated['temuan'] ?? null,
+            'tindak_lanjut'  => $validated['tindak_lanjut'] ?? null,
+            'file_lampiran'  => $kept ?: null,
         ]);
 
         return redirect()

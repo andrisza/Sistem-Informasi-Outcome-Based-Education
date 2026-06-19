@@ -17,11 +17,24 @@
     @endif
 @endsection
 
+@php
+    $filterHasAny = ($filters['tahun_masuk'] ?? null) || ($filters['kelas'] ?? null) || ($filters['program_studi'] ?? null) || ($filters['mk_id'] ?? null);
+@endphp
+
 @section('content')
 
 @php
     $fmtNum = fn ($v) => $v == (int) $v ? (int) $v : $v;
 @endphp
+
+@if (auth()->user()->role->value === 'dosen' && isset($allowedMkIds) && $allowedMkIds !== null)
+<div class="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-xs text-blue-800">
+    <svg class="w-4 h-4 text-blue-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    <span>Menampilkan data evaluasi hanya untuk MK yang Anda ampu di semester ini ({{ count($allowedMkIds) }} MK). Kaprodi dapat melihat semua MK.</span>
+</div>
+@endif
 
 {{-- Selector Semester & CPL --}}
 <form method="GET" class="flex flex-wrap items-end gap-3 mb-4">
@@ -87,7 +100,21 @@
             @endforeach
         </select>
     </div>
-    @if (($filters['tahun_masuk'] ?? null) || ($filters['kelas'] ?? null) || ($filters['program_studi'] ?? null))
+    @if ($filterOptions['mk_list']->isNotEmpty())
+    <div>
+        <label for="mk" class="block text-xs font-medium text-gray-600 mb-1">Mata Kuliah:</label>
+        <select name="mk" id="mk" onchange="this.form.submit()"
+                class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500 max-w-xs">
+            <option value="">Semua MK</option>
+            @foreach ($filterOptions['mk_list'] as $mk)
+                <option value="{{ $mk->id }}" {{ ($filters['mk_id'] ?? null) == $mk->id ? 'selected' : '' }}>
+                    {{ $mk->kode_mk }} – {{ Str::limit($mk->nama_mk, 40) }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+    @endif
+    @if ($filterHasAny)
         <a href="{{ route('kurikulum.penilaian.evaluasi-cpl', array_filter(['kurikulum' => $kurikulum, 'semester' => $semester?->id, 'cpl' => $selectedCpl?->id])) }}"
            class="text-xs text-gray-500 hover:text-red-600 underline px-1 py-1.5">
             Reset filter
@@ -156,6 +183,7 @@
         <input type="hidden" name="tahun_masuk" value="{{ $filters['tahun_masuk'] }}">
         <input type="hidden" name="kelas" value="{{ $filters['kelas'] }}">
         <input type="hidden" name="program_studi" value="{{ $filters['program_studi'] }}">
+        <input type="hidden" name="mk" value="{{ $filters['mk_id'] }}">
         <label class="text-xs font-medium text-gray-600">Import dari Excel:</label>
         <input type="file" name="file" accept=".xlsx,.xls" required
                class="text-xs border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">

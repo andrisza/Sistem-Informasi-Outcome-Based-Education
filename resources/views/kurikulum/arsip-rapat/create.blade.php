@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'Tambah Arsip Rapat')
-@section('header', 'Tambah Arsip Rapat')
+@section('title', 'Tambah Arsip Kegiatan')
+@section('header', 'Tambah Arsip Kegiatan')
 
 @section('breadcrumb')
     <a href="{{ route('kurikulum.index') }}" class="hover:text-blue-600">Kurikulum</a>
@@ -25,23 +25,23 @@
             {{-- Judul --}}
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1.5">
-                    Judul Rapat <span class="text-red-500">*</span>
+                    Judul Kegiatan <span class="text-red-500">*</span>
                 </label>
-                <input type="text" name="judul_rapat" value="{{ old('judul_rapat') }}" required
+                <input type="text" name="judul_kegiatan" value="{{ old('judul_kegiatan') }}" required
                        placeholder="contoh: Rapat Peninjauan Kurikulum 2025"
-                       class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('judul_rapat') border-red-400 @enderror">
-                @error('judul_rapat') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                       class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('judul_kegiatan') border-red-400 @enderror">
+                @error('judul_kegiatan') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
             </div>
 
             {{-- Tanggal & Tempat --}}
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1.5">
-                        Tanggal Rapat <span class="text-red-500">*</span>
+                        Tanggal <span class="text-red-500">*</span>
                     </label>
-                    <input type="date" name="tanggal_rapat" value="{{ old('tanggal_rapat') }}" required
-                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('tanggal_rapat') border-red-400 @enderror">
-                    @error('tanggal_rapat') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
+                    <input type="date" name="tanggal" value="{{ old('tanggal') }}" required
+                           class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('tanggal') border-red-400 @enderror">
+                    @error('tanggal') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                 </div>
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1.5">Tempat</label>
@@ -51,12 +51,20 @@
                 </div>
             </div>
 
-            {{-- Catatan --}}
+            {{-- Temuan --}}
             <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1.5">Catatan Rapat</label>
-                <textarea name="notulen" rows="5"
-                          placeholder="Agenda, notulen, kesimpulan, tindak lanjut..."
-                          class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y">{{ old('notulen') }}</textarea>
+                <label class="block text-xs font-medium text-gray-700 mb-1.5">Temuan</label>
+                <textarea name="temuan" rows="4"
+                          placeholder="Temuan, catatan, dan poin penting dari kegiatan..."
+                          class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y">{{ old('temuan') }}</textarea>
+            </div>
+
+            {{-- Tindak Lanjut --}}
+            <div>
+                <label class="block text-xs font-medium text-gray-700 mb-1.5">Tindak Lanjut</label>
+                <textarea name="tindak_lanjut" rows="4"
+                          placeholder="Tindak lanjut yang disepakati, PIC, dan target waktu..."
+                          class="w-full border border-gray-300 rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y">{{ old('tindak_lanjut') }}</textarea>
             </div>
 
             {{-- Bukti Rapat --}}

@@ -5,10 +5,14 @@ namespace App\Http\Controllers\Kurikulum;
 use App\Http\Controllers\Controller;
 use App\Models\Cpmk;
 use App\Models\CplProdi;
+use App\Models\EnrollmentMk;
+use App\Models\HasilCpl;
 use App\Models\HasilPl;
 use App\Models\KomponenAsesmen;
 use App\Models\Kurikulum;
 use App\Models\MataKuliah;
+use App\Models\SemesterAkademik;
+use App\Models\User;
 use App\Services\ExcelExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -483,5 +487,72 @@ class OverviewController extends Controller
         return $excel->download("peta-cpl-cpmk-mk-{$kurikulum->kode}.xlsx", [
             'Peta CPL-CPMK-MK' => ['headerRows' => [$header], 'rows' => $rows, 'colWidths' => [12,20,60,14,60,20]],
         ]);
+    }
+
+    public function radarKetercapaian(Kurikulum $kurikulum, Request $request)
+    {
+        $semesterList = SemesterAkademik::orderByDesc('id')->get();
+        $semester = $request->filled('semester')
+            ? $semesterList->firstWhere('id', (int) $request->semester)
+            : ($semesterList->firstWhere('is_aktif', true) ?? $semesterList->first());
+
+        $cplList = $kurikulum->cplProdi()->orderBy('urutan')->get();
+        $plList  = $kurikulum->pl()->orderBy('urutan')->get();
+
+        // Individual mahasiswa
+        $selectedMhsId = $request->filled('mahasiswa') ? (int) $request->mahasiswa : null;
+        $selectedMhs   = $selectedMhsId ? User::find($selectedMhsId) : null;
+
+        $mahasiswaList = collect();
+        if ($semester) {
+            $mkIds = $kurikulum->mataKuliah()->pluck('id');
+            $mhsIds = EnrollmentMk::whereIn('id_mk', $mkIds)
+                ->where('id_semester', $semester->id)
+                ->where('status', 'aktif')
+                ->pluck('id_mahasiswa')
+                ->unique();
+            $mahasiswaList = User::whereIn('id', $mhsIds)->orderBy('name')->get(['id','name','identifier','tahun_masuk']);
+        }
+
+        // CPL data per individu
+        $cplIndividuData = [];
+        if ($selectedMhs && $semester) {
+            foreach ($cplList as $cpl) {
+                $hasil = HasilCpl::where('id_mahasiswa', $selectedMhs->id)
+                    ->where('id_cpl', $cpl->id)
+                    ->where('id_semester', $semester->id)
+                    ->first();
+                $cplIndividuData[] = $hasil ? round((float) $hasil->nilai_cpl, 1) : 0;
+            }
+        }
+
+        // Angkatan filter
+        $angkatanList = User::whereIn('id', $mahasiswaList->pluck('id'))
+            ->whereNotNull('tahun_masuk')
+            ->distinct()->orderBy('tahun_masuk')->pluck('tahun_masuk');
+
+        $selectedAngkatan = $request->filled('angkatan') ? (int) $request->angkatan : null;
+
+        // CPL data per angkatan (rata-rata)
+        $cplAngkatanData = [];
+        if ($selectedAngkatan && $semester) {
+            $angkatanMhsIds = User::whereIn('id', $mahasiswaList->pluck('id'))
+                ->where('tahun_masuk', $selectedAngkatan)->pluck('id');
+            foreach ($cplList as $cpl) {
+                $avg = HasilCpl::whereIn('id_mahasiswa', $angkatanMhsIds)
+                    ->where('id_cpl', $cpl->id)
+                    ->where('id_semester', $semester->id)
+                    ->avg('nilai_cpl');
+                $cplAngkatanData[] = $avg ? round((float) $avg, 1) : 0;
+            }
+        }
+
+        return view('kurikulum.overview.radar-ketercapaian', compact(
+            'kurikulum', 'semester', 'semesterList',
+            'cplList', 'plList',
+            'mahasiswaList', 'selectedMhs', 'selectedMhsId',
+            'cplIndividuData',
+            'angkatanList', 'selectedAngkatan', 'cplAngkatanData',
+        ));
     }
 }

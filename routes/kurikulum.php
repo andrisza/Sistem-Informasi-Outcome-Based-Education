@@ -128,6 +128,8 @@ Route::prefix('/{kurikulum}')
             Route::post('/cpl-cpmk-mk',          [OverviewController::class, 'storeCpmk'])->name('cpl-cpmk-mk.store');
             Route::patch('/cpl-cpmk-mk/{cpmk}',  [OverviewController::class, 'updateCpmk'])->name('cpl-cpmk-mk.update');
             Route::delete('/cpl-cpmk-mk/{cpmk}', [OverviewController::class, 'destroyCpmk'])->name('cpl-cpmk-mk.destroy');
+            // Radar ketercapaian CPL/PL
+            Route::get('/radar-ketercapaian', [OverviewController::class, 'radarKetercapaian'])->name('radar-ketercapaian');
         });
 
         // Organisasi MK per semester
@@ -176,10 +178,6 @@ Route::prefix('/{kurikulum}')
             Route::get('/evaluasi-cpl/export', [\App\Http\Controllers\Kurikulum\RekapCplController::class, 'prosesExport'])->name('evaluasi-cpl.export');
             Route::post('/evaluasi-cpl/import', [\App\Http\Controllers\Kurikulum\RekapCplController::class, 'prosesImport'])->name('evaluasi-cpl.import');
 
-            // Rekap Capaian CPL (Tabel L) — matriks lintas MK dalam 1 semester
-            Route::get('/rekap-cpl', [\App\Http\Controllers\Kurikulum\RekapCplController::class, 'index'])->name('rekap-cpl');
-            Route::get('/rekap-cpl/export', [\App\Http\Controllers\Kurikulum\RekapCplController::class, 'export'])->name('rekap-cpl.export');
-            Route::post('/rekap-cpl/import', [\App\Http\Controllers\Kurikulum\RekapCplController::class, 'import'])->name('rekap-cpl.import');
         });
 
         // Generate PDF / Print

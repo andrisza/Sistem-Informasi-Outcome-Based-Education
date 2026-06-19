@@ -48,7 +48,7 @@
     <div class="space-y-3">
         @foreach ($arsipList as $arsip)
             @php
-                $hasCatatan = !empty($arsip->notulen);
+                $hasCatatan = !empty($arsip->temuan) || !empty($arsip->tindak_lanjut);
                 $fileCnt    = count($arsip->file_lampiran ?? []);
             @endphp
 
@@ -57,8 +57,8 @@
 
                     {{-- Date badge --}}
                     <div class="shrink-0 text-center bg-slate-50 border border-slate-100 rounded-lg px-3 py-2 min-w-[56px]">
-                        <p class="text-xs font-bold text-slate-600">{{ $arsip->tanggal_rapat?->format('d') ?? '—' }}</p>
-                        <p class="text-[10px] text-slate-400 uppercase">{{ $arsip->tanggal_rapat?->format('M Y') ?? '' }}</p>
+                        <p class="text-xs font-bold text-slate-600">{{ $arsip->tanggal?->format('d') ?? '—' }}</p>
+                        <p class="text-[10px] text-slate-400 uppercase">{{ $arsip->tanggal?->format('M Y') ?? '' }}</p>
                     </div>
 
                     {{-- Main content --}}
@@ -67,7 +67,7 @@
                             <div class="min-w-0">
                                 <a href="{{ route('kurikulum.arsip-rapat.show', [$kurikulum, $arsip]) }}"
                                    class="font-semibold text-gray-800 text-sm hover:text-blue-600 transition-colors block truncate">
-                                    {{ $arsip->judul_rapat }}
+                                    {{ $arsip->judul_kegiatan }}
                                 </a>
                                 <div class="flex flex-wrap items-center gap-2 mt-1">
                                     @if ($arsip->tempat)

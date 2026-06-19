@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
-@section('title', $arsipRapat->judul_rapat)
-@section('header', 'Detail Arsip Rapat')
+@section('title', $arsipRapat->judul_kegiatan)
+@section('header', 'Detail Arsip Kegiatan')
 
 @section('breadcrumb')
     <a href="{{ route('kurikulum.index') }}" class="hover:text-blue-600">Kurikulum</a>
@@ -10,7 +10,7 @@
     <span class="mx-1 text-gray-300">/</span>
     <a href="{{ route('kurikulum.arsip-rapat.index', $kurikulum) }}" class="hover:text-blue-600">Arsip Rapat</a>
     <span class="mx-1 text-gray-300">/</span>
-    <span class="text-gray-700 font-medium">{{ Str::limit($arsipRapat->judul_rapat, 40) }}</span>
+    <span class="text-gray-700 font-medium">{{ Str::limit($arsipRapat->judul_kegiatan, 40) }}</span>
 @endsection
 
 @section('header-actions')
@@ -39,7 +39,7 @@
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div class="px-5 py-4 flex flex-wrap items-start justify-between gap-3">
             <div>
-                <h2 class="font-bold text-gray-900 text-base leading-snug">{{ $arsipRapat->judul_rapat }}</h2>
+                <h2 class="font-bold text-gray-900 text-base leading-snug">{{ $arsipRapat->judul_kegiatan }}</h2>
             </div>
             @if (!$kurikulum->isArsip())
                 <a href="{{ route('kurikulum.arsip-rapat.edit', [$kurikulum, $arsipRapat]) }}"
@@ -52,7 +52,7 @@
             <div class="px-5 py-3">
                 <p class="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Tanggal</p>
                 <p class="text-sm font-semibold text-gray-800">
-                    {{ $arsipRapat->tanggal_rapat?->translatedFormat('d F Y') ?? '–' }}
+                    {{ $arsipRapat->tanggal?->translatedFormat('d F Y') ?? '–' }}
                 </p>
             </div>
             <div class="px-5 py-3">
@@ -67,17 +67,32 @@
         </div>
     </div>
 
-    {{-- Catatan --}}
-    @if ($arsipRapat->notulen)
+    {{-- Temuan --}}
+    @if ($arsipRapat->temuan)
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <div class="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
             <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
             </svg>
-            <h3 class="text-xs font-semibold text-gray-700 uppercase tracking-wider">Catatan Rapat</h3>
+            <h3 class="text-xs font-semibold text-gray-700 uppercase tracking-wider">Temuan</h3>
         </div>
         <div class="px-5 py-4">
-            <p class="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{{ $arsipRapat->notulen }}</p>
+            <p class="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{{ $arsipRapat->temuan }}</p>
+        </div>
+    </div>
+    @endif
+
+    {{-- Tindak Lanjut --}}
+    @if ($arsipRapat->tindak_lanjut)
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="px-5 py-3.5 border-b border-gray-100 flex items-center gap-2">
+            <svg class="w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+            </svg>
+            <h3 class="text-xs font-semibold text-gray-700 uppercase tracking-wider">Tindak Lanjut</h3>
+        </div>
+        <div class="px-5 py-4">
+            <p class="text-sm text-gray-700 whitespace-pre-line leading-relaxed">{{ $arsipRapat->tindak_lanjut }}</p>
         </div>
     </div>
     @endif
