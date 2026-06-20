@@ -28,11 +28,17 @@ class SemesterAkademikController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'nama'            => ['required', 'string', 'max:30', 'unique:semester_akademik,nama'],
             'tahun_akademik'  => ['required', 'string', 'max:10'],
-            'jenis'           => ['required', Rule::in(['Ganjil', 'Genap', 'Pendek'])],
+            'jenis'           => [
+                'required',
+                Rule::in(['Gasal', 'Genap']),
+                Rule::unique('semester_akademik', 'jenis')
+                    ->where('tahun_akademik', $request->input('tahun_akademik')),
+            ],
             'tanggal_mulai'   => ['nullable', 'date'],
             'tanggal_selesai' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
+        ], [
+            'jenis.unique' => 'Semester dengan tahun akademik dan jenis tersebut sudah ada.',
         ]);
 
         $data['is_aktif'] = 0;
@@ -53,11 +59,18 @@ class SemesterAkademikController extends Controller
     public function update(Request $request, SemesterAkademik $semesterAkademik)
     {
         $data = $request->validate([
-            'nama'            => ['required', 'string', 'max:30', Rule::unique('semester_akademik', 'nama')->ignore($semesterAkademik->id)],
             'tahun_akademik'  => ['required', 'string', 'max:10'],
-            'jenis'           => ['required', Rule::in(['Ganjil', 'Genap', 'Pendek'])],
+            'jenis'           => [
+                'required',
+                Rule::in(['Gasal', 'Genap']),
+                Rule::unique('semester_akademik', 'jenis')
+                    ->where('tahun_akademik', $request->input('tahun_akademik'))
+                    ->ignore($semesterAkademik->id),
+            ],
             'tanggal_mulai'   => ['nullable', 'date'],
             'tanggal_selesai' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
+        ], [
+            'jenis.unique' => 'Semester dengan tahun akademik dan jenis tersebut sudah ada.',
         ]);
 
         $old = $semesterAkademik->only(['nama', 'tahun_akademik', 'jenis']);

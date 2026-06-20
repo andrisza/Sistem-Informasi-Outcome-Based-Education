@@ -71,12 +71,12 @@ class PlController extends Controller
     public function update(Request $request, Kurikulum $kurikulum, Pl $pl)
     {
         $validated = $request->validate([
-            'kode_pl'   => 'required|string|max:50',
             'deskripsi' => 'required|string',
             'kategori'  => 'nullable|string|max:100',
             'referensi' => 'nullable|string',
         ]);
 
+        // kode_pl di-generate otomatis saat create dan tidak diubah saat edit.
         $pl->update($validated);
 
         return redirect()

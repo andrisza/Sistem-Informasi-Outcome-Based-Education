@@ -42,9 +42,9 @@
                     <select name="kompetensi"
                             class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">— Pilih Kompetensi —</option>
-                        <option value="Utama"     {{ old('kompetensi', $bahanKajian->kompetensi) === 'Utama'     ? 'selected' : '' }}>Utama</option>
-                        <option value="Pendukung" {{ old('kompetensi', $bahanKajian->kompetensi) === 'Pendukung' ? 'selected' : '' }}>Pendukung</option>
-                        <option value="Umum"      {{ old('kompetensi', $bahanKajian->kompetensi) === 'Umum'      ? 'selected' : '' }}>Umum</option>
+                        @foreach ($kompetensiOptions as $k)
+                            <option value="{{ $k }}" {{ old('kompetensi', $bahanKajian->kompetensi) === $k ? 'selected' : '' }}>{{ $k }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div>

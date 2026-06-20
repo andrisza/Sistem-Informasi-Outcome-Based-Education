@@ -28,11 +28,19 @@
         padding: 0.55rem 0.9rem; border-radius: 0.5rem;
         font-size: 0.75rem; font-weight: 600;
         box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
-        transform: translateY(120%); transition: transform 0.25s ease;
+        /* Sembunyikan sepenuhnya di luar viewport: geser tinggi penuh + jarak bottom.
+           translateY(120%) tidak cukup karena ada offset bottom:1rem → menyisakan sliver. */
+        transform: translateY(calc(100% + 2rem));
+        opacity: 0; visibility: hidden;
+        transition: transform 0.25s ease, opacity 0.25s ease, visibility 0s linear 0.25s;
         display: flex; align-items: center; gap: 0.5rem;
         pointer-events: none;
     }
-    .pivot-autosave-status.is-visible { transform: translateY(0); }
+    .pivot-autosave-status.is-visible {
+        transform: translateY(0);
+        opacity: 1; visibility: visible;
+        transition: transform 0.25s ease, opacity 0.25s ease;
+    }
     .pivot-autosave-status.is-ok      { background: #047857; }
     .pivot-autosave-status.is-derived { background: #6d28d9; }
     .pivot-autosave-status.is-error   { background: #b91c1c; }

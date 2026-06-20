@@ -103,21 +103,23 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // ── 2. SEMESTER AKADEMIK ──────────────────────────────────────────────
-        $semGanjil = SemesterAkademik::firstOrCreate(['nama' => 'Ganjil 2024/2025'], [
-            'tahun_akademik'  => '2024/2025',
-            'jenis'           => 'Ganjil',
-            'is_aktif'        => 1,
-            'tanggal_mulai'   => '2024-09-01',
-            'tanggal_selesai' => '2025-01-31',
-        ]);
+        $semGanjil = SemesterAkademik::firstOrCreate(
+            ['tahun_akademik' => '2024/2025', 'jenis' => 'Gasal'],
+            [
+                'is_aktif'        => 1,
+                'tanggal_mulai'   => '2024-09-01',
+                'tanggal_selesai' => '2025-01-31',
+            ]
+        );
 
-        $semGenap = SemesterAkademik::firstOrCreate(['nama' => 'Genap 2023/2024'], [
-            'tahun_akademik'  => '2023/2024',
-            'jenis'           => 'Genap',
-            'is_aktif'        => 0,
-            'tanggal_mulai'   => '2024-02-01',
-            'tanggal_selesai' => '2024-06-30',
-        ]);
+        $semGenap = SemesterAkademik::firstOrCreate(
+            ['tahun_akademik' => '2023/2024', 'jenis' => 'Genap'],
+            [
+                'is_aktif'        => 0,
+                'tanggal_mulai'   => '2024-02-01',
+                'tanggal_selesai' => '2024-06-30',
+            ]
+        );
 
         // ── 3. KURIKULUM ──────────────────────────────────────────────────────
         // Kode otomatis format: K-{PRODI}-{JENJANG}-{TAHUN} → K-SI-S1-2021

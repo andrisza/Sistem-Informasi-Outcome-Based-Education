@@ -34,13 +34,8 @@
                 <select name="kategori"
                         class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="">— Pilih Kategori —</option>
-                    <option value="Kompetensi Utama"  {{ old('kategori') === 'Kompetensi Utama'  ? 'selected' : '' }}>Kompetensi Utama</option>
-                    <option value="Kompetensi Sikap"  {{ old('kategori') === 'Kompetensi Sikap'  ? 'selected' : '' }}>Kompetensi Sikap</option>
-                    <option value="Kompetensi Pendukung" {{ old('kategori') === 'Kompetensi Pendukung' ? 'selected' : '' }}>Kompetensi Pendukung</option>
                     @foreach ($kategoriOptions as $k)
-                        @if (!in_array($k, ['Kompetensi Utama','Kompetensi Sikap','Kompetensi Pendukung']))
-                            <option value="{{ $k }}" {{ old('kategori') == $k ? 'selected' : '' }}>{{ $k }}</option>
-                        @endif
+                        <option value="{{ $k }}" {{ old('kategori') == $k ? 'selected' : '' }}>{{ $k }}</option>
                     @endforeach
                 </select>
             </div>

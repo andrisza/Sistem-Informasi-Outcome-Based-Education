@@ -184,14 +184,19 @@
     </tbody>
     <tfoot>
         <tr style="background:#92400E">
-            <td colspan="5"
+            <td colspan="4"
                 class="px-4 py-2.5 text-right text-xs font-bold text-white border border-amber-700">
                 TOTAL
             </td>
+            {{-- Total SKS sejajar dengan kolom SKS di atasnya --}}
+            <td class="px-2 py-2.5 text-center text-xs font-bold text-white border border-amber-700">
+                {{ $totalSks }}
+            </td>
+            {{-- Kolom semester menampilkan jumlah MK yang dipetakan ke semester itu --}}
             @for ($s = 1; $s <= 8; $s++)
-                @php $smtSks = $mkList->where('semester', $s)->sum('sks_total'); @endphp
+                @php $smtCount = $mkList->where('semester', $s)->count(); @endphp
                 <td class="px-2 py-2.5 text-center text-xs font-bold text-white border border-amber-700">
-                    {{ $smtSks > 0 ? $smtSks : '—' }}
+                    {{ $smtCount > 0 ? $smtCount : '—' }}
                 </td>
             @endfor
             @if ($isEditable)

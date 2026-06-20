@@ -65,11 +65,11 @@ class SubCpmkController extends Controller
     public function update(Request $request, Kurikulum $kurikulum, MataKuliah $mataKuliah, Cpmk $cpmk, SubCpmk $subCpmk)
     {
         $validated = $request->validate([
-            'kode_sub_cpmk' => 'required|string|max:50',
             'deskripsi'     => 'required|string',
             'bobot'         => 'required|numeric|min:0|max:100',
         ]);
 
+        // kode_sub_cpmk di-generate otomatis saat create dan tidak diubah saat edit.
         $subCpmk->update($validated);
 
         $redirectTo = $request->input('_redirect_to');

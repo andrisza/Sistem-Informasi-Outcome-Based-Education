@@ -12,13 +12,15 @@ class SemesterAkademik extends Model
     protected $table = 'semester_akademik';
 
     protected $fillable = [
-        'nama',
         'tahun_akademik',
         'jenis',
         'is_aktif',
         'tanggal_mulai',
         'tanggal_selesai',
     ];
+
+    /** Nama semester diturunkan dari jenis + tahun akademik (kolom `nama` sudah dihapus). */
+    protected $appends = ['nama'];
 
     protected function casts(): array
     {
@@ -28,6 +30,14 @@ class SemesterAkademik extends Model
             'tanggal_selesai'  => 'date',
             'created_at'       => 'datetime',
         ];
+    }
+
+    // ── Accessors ──────────────────────────────────────────────
+
+    /** Nama tampilan, mis. "Gasal 2024/2025". */
+    public function getNamaAttribute(): string
+    {
+        return trim(($this->jenis ?? '') . ' ' . ($this->tahun_akademik ?? ''));
     }
 
     // ── Relationships ──────────────────────────────────────────

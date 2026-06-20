@@ -371,10 +371,9 @@ class RpsController extends Controller
     private function generateKodeRps(MataKuliah $mk, SemesterAkademik $semester): string
     {
         $semAbbr = match($semester->jenis) {
-            'Ganjil' => 'GNJ',
-            'Genap'  => 'GNP',
-            'Pendek' => 'PDK',
-            default  => 'SEM',
+            'Gasal' => 'GSL',
+            'Genap' => 'GNP',
+            default => 'SEM',
         };
         $tahunParts = explode('/', $semester->tahun_akademik);
         $yearAbbr   = substr($tahunParts[0] ?? date('Y'), 2, 2)

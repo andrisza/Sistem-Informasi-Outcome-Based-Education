@@ -27,22 +27,18 @@ class CplProdiController extends Controller
     public function create(Kurikulum $kurikulum)
     {
         $nextUrutan = ($kurikulum->cplProdi()->max('urutan') ?? 0) + 1;
-        $nextKode   = $this->generateKodeCpl($kurikulum);
 
-        return view('kurikulum.cpl-prodi.create', compact('kurikulum', 'nextUrutan', 'nextKode'));
+        return view('kurikulum.cpl-prodi.create', compact('kurikulum', 'nextUrutan'));
     }
 
     public function store(Request $request, Kurikulum $kurikulum)
     {
         $validated = $request->validate([
-            'kode_cpl'  => 'nullable|string|max:50|unique:cpl_prodi,kode_cpl,NULL,id,id_kurikulum,' . $kurikulum->id,
             'deskripsi' => 'required|string',
         ]);
 
-        if (empty($validated['kode_cpl'])) {
-            $validated['kode_cpl'] = $this->generateKodeCpl($kurikulum);
-        }
-
+        // Kode CPL selalu di-generate otomatis (tidak diisi pengguna).
+        $validated['kode_cpl']     = $this->generateKodeCpl($kurikulum);
         $validated['urutan']       = ($kurikulum->cplProdi()->max('urutan') ?? 0) + 1;
         $validated['id_kurikulum'] = $kurikulum->id;
         CplProdi::create($validated);

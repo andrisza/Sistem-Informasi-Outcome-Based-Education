@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Kurikulum;
 use App\Http\Controllers\Controller;
 use App\Models\CplSndikti;
 use App\Models\Kurikulum;
+use App\Models\MasterKategori;
 use App\Services\ExcelExportService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 class CplSndiktiController extends Controller
 {
@@ -19,16 +21,31 @@ class CplSndiktiController extends Controller
         return view('kurikulum.cpl-sndikti.index', compact('kurikulum', 'cplsnList'));
     }
 
+    /**
+     * Daftar kategori aktif dari master_kategori (jenis 'cpl').
+     * $include opsional menambahkan nilai lama agar tetap valid saat edit.
+     */
+    private function kategoriOptions(?string $include = null): array
+    {
+        $options = MasterKategori::jenis('cpl')->aktif()->orderBy('urutan')->pluck('nama');
+
+        if ($include && !$options->contains($include)) {
+            $options->push($include);
+        }
+
+        return $options->all();
+    }
+
     public function create(Kurikulum $kurikulum)
     {
-        $kategoriOptions = ['Sikap', 'Keterampilan Umum', 'Keterampilan Khusus', 'Pengetahuan'];
+        $kategoriOptions = $this->kategoriOptions();
         return view('kurikulum.cpl-sndikti.create', compact('kurikulum', 'kategoriOptions'));
     }
 
     public function store(Request $request, Kurikulum $kurikulum)
     {
         $validated = $request->validate([
-            'kategori'  => 'required|in:Sikap,Keterampilan Umum,Keterampilan Khusus,Pengetahuan',
+            'kategori'  => ['required', Rule::in($this->kategoriOptions())],
             'deskripsi' => 'required|string',
         ]);
 
@@ -57,14 +74,15 @@ class CplSndiktiController extends Controller
 
     public function edit(Kurikulum $kurikulum, CplSndikti $cplSndikti)
     {
-        $kategoriOptions = ['Sikap', 'Keterampilan Umum', 'Keterampilan Khusus', 'Pengetahuan'];
+        // Sertakan nilai lama agar tetap valid walau kategorinya sudah dinonaktifkan.
+        $kategoriOptions = $this->kategoriOptions($cplSndikti->kategori);
         return view('kurikulum.cpl-sndikti.edit', compact('kurikulum', 'cplSndikti', 'kategoriOptions'));
     }
 
     public function update(Request $request, Kurikulum $kurikulum, CplSndikti $cplSndikti)
     {
         $validated = $request->validate([
-            'kategori'  => 'required|in:Sikap,Keterampilan Umum,Keterampilan Khusus,Pengetahuan',
+            'kategori'  => ['required', Rule::in($this->kategoriOptions($cplSndikti->kategori))],
             'deskripsi' => 'required|string',
         ]);
         $cplSndikti->update($validated);

@@ -43,7 +43,7 @@
                 @error('nama_mk') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-medium text-gray-700 mb-1">SKS Teori <span class="text-red-500">*</span></label>
                     <input type="number" name="sks_teori" value="{{ old('sks_teori', 2) }}" min="0" max="6"
@@ -56,17 +56,6 @@
                            class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('sks_praktikum') border-red-400 @enderror">
                     @error('sks_praktikum') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
                 </div>
-                <div>
-                    <label class="block text-xs font-medium text-gray-700 mb-1">Kategori MK <span class="text-red-500">*</span></label>
-                    <select name="kategori_mk"
-                            class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('kategori_mk') border-red-400 @enderror">
-                        <option value="">-- Pilih --</option>
-                        @foreach ($kategoriOptions as $kat)
-                            <option value="{{ $kat }}" {{ old('kategori_mk') == $kat ? 'selected' : '' }}>{{ $kat }}</option>
-                        @endforeach
-                    </select>
-                    @error('kategori_mk') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-                </div>
             </div>
 
             <div>
@@ -77,14 +66,6 @@
                     <option value="Pendukung" {{ old('kompetensi_mk') === 'Pendukung' ? 'selected' : '' }}>Pendukung</option>
                 </select>
                 <p class="text-[10px] text-gray-400 mt-1">Utama = MK inti prodi, Pendukung = MK pilihan/pelengkap.</p>
-            </div>
-
-            <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Kode Prasyarat</label>
-                <input type="text" name="kode_prasyarat" value="{{ old('kode_prasyarat') }}"
-                       class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 @error('kode_prasyarat') border-red-400 @enderror"
-                       placeholder="cth: MK05 (kosongkan jika tidak ada)">
-                @error('kode_prasyarat') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
             </div>
 
         </div>

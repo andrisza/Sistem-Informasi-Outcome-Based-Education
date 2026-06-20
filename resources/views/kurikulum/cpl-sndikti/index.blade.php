@@ -65,7 +65,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
             <span>Belum ada data CPL SN-Dikti.</span>
-            <a href="{{ route('kurikulum.cpl-sndikti.create') }}" class="text-amber-600 hover:underline font-medium">Tambah sekarang →</a>
+            <a href="{{ route('kurikulum.cpl-sndikti.create', $kurikulum) }}" class="text-amber-600 hover:underline font-medium">Tambah sekarang →</a>
         </div>
     </div>
 @else

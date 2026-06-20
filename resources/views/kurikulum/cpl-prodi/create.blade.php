@@ -21,17 +21,6 @@
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50">
         <div class="px-6 py-5 space-y-4">
 
-            {{-- Kode CPL (auto-generate, opsional override) --}}
-            <div>
-                <label class="block text-xs font-medium text-gray-700 mb-1">Kode CPL</label>
-                <input type="text" name="kode_cpl"
-                       value="{{ old('kode_cpl', $nextKode) }}"
-                       class="w-full border border-gray-300 rounded-lg px-3.5 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-violet-500 @error('kode_cpl') border-red-400 @enderror"
-                       placeholder="cth: CPL01">
-                <p class="text-xs text-gray-400 mt-1">Dikosongkan untuk generate otomatis.</p>
-                @error('kode_cpl') <p class="text-xs text-red-500 mt-1">{{ $message }}</p> @enderror
-            </div>
-
             {{-- Deskripsi --}}
             <div>
                 <label class="block text-xs font-medium text-gray-700 mb-1">Deskripsi <span class="text-red-500">*</span></label>

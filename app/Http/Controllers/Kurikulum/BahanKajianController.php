@@ -11,10 +11,26 @@ use App\Traits\GeneratesObeKode;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\Rule;
 
 class BahanKajianController extends Controller
 {
     use GeneratesObeKode;
+
+    /**
+     * Daftar kompetensi aktif dari master_kategori (jenis 'bk').
+     * $include opsional menambahkan nilai lama agar tetap valid saat edit.
+     */
+    private function kompetensiOptions(?string $include = null): array
+    {
+        $options = MasterKategori::jenis('bk')->aktif()->orderBy('urutan')->pluck('nama');
+
+        if ($include && !$options->contains($include)) {
+            $options->push($include);
+        }
+
+        return $options->all();
+    }
 
     public function index(Kurikulum $kurikulum)
     {
@@ -27,11 +43,11 @@ class BahanKajianController extends Controller
 
     public function create(Kurikulum $kurikulum)
     {
-        $nextUrutan      = ($kurikulum->bahanKajian()->max('urutan') ?? 0) + 1;
-        $nextKode        = $this->generateKodeBk($kurikulum);
-        $bidangOptions   = MasterKategori::jenis('bk')->aktif()->orderBy('urutan')->pluck('nama');
+        $nextUrutan        = ($kurikulum->bahanKajian()->max('urutan') ?? 0) + 1;
+        $nextKode          = $this->generateKodeBk($kurikulum);
+        $kompetensiOptions = $this->kompetensiOptions();
 
-        return view('kurikulum.bahan-kajian.create', compact('kurikulum', 'nextUrutan', 'nextKode', 'bidangOptions'));
+        return view('kurikulum.bahan-kajian.create', compact('kurikulum', 'nextUrutan', 'nextKode', 'kompetensiOptions'));
     }
 
     public function store(Request $request, Kurikulum $kurikulum)
@@ -40,7 +56,7 @@ class BahanKajianController extends Controller
             'kode_bk'         => 'nullable|string|max:50|unique:bahan_kajian,kode_bk,NULL,id,id_kurikulum,' . $kurikulum->id,
             'nama_bk'         => 'required|string|max:255',
             'deskripsi'       => 'nullable|string',
-            'kompetensi'      => 'nullable|in:Utama,Pendukung,Umum',
+            'kompetensi'      => ['nullable', Rule::in($this->kompetensiOptions())],
             'referensi'       => 'nullable|string|max:150',
             'bidang_keilmuan' => 'nullable|string|max:150',
         ]);
@@ -66,21 +82,21 @@ class BahanKajianController extends Controller
 
     public function edit(Kurikulum $kurikulum, BahanKajian $bahanKajian)
     {
-        $bidangOptions = MasterKategori::jenis('bk')->aktif()->orderBy('urutan')->pluck('nama');
-        return view('kurikulum.bahan-kajian.edit', compact('kurikulum', 'bahanKajian', 'bidangOptions'));
+        $kompetensiOptions = $this->kompetensiOptions($bahanKajian->kompetensi);
+        return view('kurikulum.bahan-kajian.edit', compact('kurikulum', 'bahanKajian', 'kompetensiOptions'));
     }
 
     public function update(Request $request, Kurikulum $kurikulum, BahanKajian $bahanKajian)
     {
         $validated = $request->validate([
-            'kode_bk'         => 'required|string|max:50',
             'nama_bk'         => 'required|string|max:255',
             'deskripsi'       => 'nullable|string',
-            'kompetensi'      => 'nullable|in:Utama,Pendukung,Umum',
+            'kompetensi'      => ['nullable', Rule::in($this->kompetensiOptions($bahanKajian->kompetensi))],
             'referensi'       => 'nullable|string|max:150',
             'bidang_keilmuan' => 'nullable|string|max:150',
         ]);
 
+        // kode_bk di-generate otomatis saat create dan tidak diubah saat edit.
         $bahanKajian->update($validated);
 
         return redirect()

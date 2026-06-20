@@ -30,10 +30,10 @@ class MataKuliahController extends Controller
 
     public function create(Kurikulum $kurikulum)
     {
-        $nextKode      = $this->generateKodeMk($kurikulum);
-        $kategoriOptions = MasterKategori::jenis('mk')->aktif()->orderBy('urutan')->pluck('nama');
+        // Kategori MK tidak diisi di susunan MK — dipetakan di Organisasi Mata Kuliah.
+        $nextKode = $this->generateKodeMk($kurikulum);
 
-        return view('kurikulum.mata-kuliah.create', compact('kurikulum', 'nextKode', 'kategoriOptions'));
+        return view('kurikulum.mata-kuliah.create', compact('kurikulum', 'nextKode'));
     }
 
     public function store(Request $request, Kurikulum $kurikulum)
@@ -44,7 +44,7 @@ class MataKuliahController extends Controller
             'sks_teori'      => 'required|integer|min:0',
             'sks_praktikum'  => 'required|integer|min:0',
             'semester'       => 'required|integer|min:1|max:14',
-            'kategori_mk'    => 'required|string|max:50',
+            'kategori_mk'    => 'nullable|string|max:50',
             'kompetensi_mk'  => 'nullable|in:Utama,Pendukung',
             'kode_prasyarat' => 'nullable|string|max:20',
         ], [
