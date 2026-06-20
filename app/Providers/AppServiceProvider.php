@@ -7,6 +7,7 @@ use App\Models\MataKuliah;
 use App\Models\User;
 use App\Observers\MataKuliahObserver;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -24,6 +25,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // ── Paksa HTTPS di produksi ───────────────────────────────────────────
+        // Railway menerima HTTPS lalu meneruskan ke aplikasi sebagai HTTP, jadi
+        // tanpa ini Laravel membuat URL aset (CSS/JS via @vite) dengan skema
+        // http:// dan diblokir browser sebagai mixed content.
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
+
         // ── Model Observers ───────────────────────────────────────────────────
         MataKuliah::observe(MataKuliahObserver::class);
 

@@ -11,6 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Percayai proxy Railway agar Laravel mendeteksi HTTPS dari header
+        // X-Forwarded-Proto (penting untuk URL aset & redirect yang benar).
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'role'               => \App\Http\Middleware\RoleMiddleware::class,
             'kurikulum.locked'   => \App\Http\Middleware\CheckKurikulumLocked::class,
