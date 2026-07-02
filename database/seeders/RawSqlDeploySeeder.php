@@ -10,21 +10,25 @@ class RawSqlDeploySeeder extends Seeder
 {
     public function run(): void
     {
-        // Jalur menuju file SQL mentah
         $path = database_path('sql/si_obe.sql');
 
         if (File::exists($path)) {
-            $this->command->info('Sedang mengimport seluruh database lokal...');
+            $this->command->info('Sedang mengimport seluruh database si_obe...');
             
-            // Membaca isi file SQL
+            // 1. Matikan sementara sistem pengecekan Foreign Key di MySQL
+            DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+            
             $sql = File::get($path);
             
-            // Mengeksekusi seluruh query SQL mentah tanpa terkecuali
+            // 2. Eksekusi seluruh file SQL (termasuk DROP tabel lama)
             DB::unprepared($sql);
             
-            $this->command->info('Database lokal berhasil terdeploy seluruhnya!');
+            // 3. Nyalakan kembali sistem pengecekan Foreign Key agar database tetap aman
+            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+            
+            $this->command->info('Database si_obe berhasil terdeploy seluruhnya!');
         } else {
-            $this->command->error('File dump.sql tidak ditemukan di database/sql/');
+            $this->command->error('File si_obe.sql tidak ditemukan di database/sql/');
         }
     }
 }
